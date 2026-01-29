@@ -15,25 +15,25 @@ extends Node
 class_name FarmInteractionManager
 
 ## Reference to the FarmGrid
-var farm_grid: FarmGrid = null
+var farm_grid = null
 
 ## Reference to the InteractionPrompt UI
-var interaction_prompt: InteractionPrompt = null
+var interaction_prompt = null
 
 ## Reference to the player (for position checking)
-var player: Node3D = null
+var player = null
 
 ## Maximum distance for interaction (in world units)
 @export var interaction_distance: float = 2.0
 
 ## Currently nearby plot (if any)
-var nearby_plot: Plot = null
+var nearby_plot = null
 
 ## Crop data database (mapping crop_id to CropData resources)
 var crop_database: Dictionary = {}
 
 ## Currently selected crop for planting (if any)
-var selected_crop: CropData = null
+var selected_crop = null
 
 func _ready() -> void:
 	# Initialize crop database with default crops
@@ -43,7 +43,7 @@ func _ready() -> void:
 ## @param grid: The FarmGrid to monitor
 ## @param prompt: The InteractionPrompt UI element
 ## @param player_node: The player node (for position checking)
-func initialize(grid: FarmGrid, prompt: InteractionPrompt, player_node: Node3D) -> void:
+func initialize(grid, prompt, player_node) -> void:
 	farm_grid = grid
 	interaction_prompt = prompt
 	player = player_node
@@ -86,7 +86,7 @@ func _input(event: InputEvent) -> void:
 
 ## Find the nearest plot within interaction distance
 ## @returns: Plot instance if found, null otherwise
-func _find_nearby_plot() -> Plot:
+func _find_nearby_plot():
 	if farm_grid == null or player == null:
 		return null
 	
@@ -112,26 +112,27 @@ func _find_nearby_plot() -> Plot:
 
 ## Update the interaction prompt based on plot state
 ## @param plot: The plot to check
-func _update_prompt_for_plot(plot: Plot) -> void:
+func _update_prompt_for_plot(plot) -> void:
 	if plot == null or interaction_prompt == null:
 		return
 	
 	var prompt_text = ""
 	
+	# PlotState enum values: EMPTY=0, GROWING=1, HARVESTABLE=2
 	match plot.state:
-		Plot.PlotState.EMPTY:
+		0:  # EMPTY
 			# Check if player has seeds
 			if _player_has_seeds():
 				prompt_text = "Press E to Plant"
 			else:
 				prompt_text = "No seeds available"
 		
-		Plot.PlotState.GROWING:
+		1:  # GROWING
 			# Show growth progress
 			var progress_percent = int(plot.get_growth_progress() * 100)
 			prompt_text = "Growing... %d%%" % progress_percent
 		
-		Plot.PlotState.HARVESTABLE:
+		2:  # HARVESTABLE
 			prompt_text = "Press E to Harvest"
 	
 	if not prompt_text.is_empty():
@@ -144,8 +145,9 @@ func _handle_interaction() -> void:
 	if nearby_plot == null or farm_grid == null:
 		return
 	
+	# PlotState enum values: EMPTY=0, GROWING=1, HARVESTABLE=2
 	match nearby_plot.state:
-		Plot.PlotState.EMPTY:
+		0:  # EMPTY
 			# Attempt to plant
 			if selected_crop != null:
 				var success = farm_grid.plant_crop(nearby_plot, selected_crop)
@@ -161,7 +163,7 @@ func _handle_interaction() -> void:
 					if success:
 						print("Planted %s" % selected_crop.crop_id)
 		
-		Plot.PlotState.HARVESTABLE:
+		2:  # HARVESTABLE
 			# Attempt to harvest
 			var resources = farm_grid.harvest_crop(nearby_plot)
 			if not resources.is_empty():
@@ -224,7 +226,7 @@ func _is_initialized() -> bool:
 func _initialize_crop_database() -> void:
 	# For now, create a simple default crop for testing
 	# This will be replaced with proper CropData resources in task 6.3.1
-	var default_crop = CropData.new()
+	var default_crop = load("res://resources/crops/crop_data.gd").new()
 	default_crop.crop_id = "health_berry"
 	default_crop.display_name = "Health Berry"
 	default_crop.growth_time = 10.0
@@ -241,10 +243,10 @@ func set_crop_database(database: Dictionary) -> void:
 
 ## Set the currently selected crop for planting
 ## @param crop: CropData resource to select
-func set_selected_crop(crop: CropData) -> void:
+func set_selected_crop(crop) -> void:
 	selected_crop = crop
 
 ## Get the currently selected crop
 ## @returns: Currently selected CropData, or null
-func get_selected_crop() -> CropData:
+func get_selected_crop():
 	return selected_crop

@@ -48,7 +48,7 @@ var growth_time: float = 30.0
 
 ## Reference to the CropData for the currently planted crop
 ## Null when plot is empty
-var crop_data: CropData = null
+var crop_data = null
 
 ## Sprite node for displaying crop visuals
 ## Created in _ready() if not already present
@@ -65,7 +65,7 @@ signal growth_completed()
 ## Plant a crop in this plot
 ## @param crop: CropData resource defining the crop to plant
 ## @returns: true if planting succeeded, false if plot is not empty
-func plant(crop: CropData) -> bool:
+func plant(crop) -> bool:
 	if state != PlotState.EMPTY:
 		push_warning("Plot.plant: Cannot plant in non-empty plot (state: %d)" % state)
 		return false

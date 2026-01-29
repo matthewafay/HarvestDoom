@@ -39,18 +39,18 @@ func _setup_ui() -> void:
 
 ## Create inventory display panel
 func _create_inventory_panel() -> void:
-	# Background panel
+	# Background panel - smaller and repositioned
 	inventory_panel = Panel.new()
 	inventory_panel.position = Vector2(20, 20)
-	inventory_panel.custom_minimum_size = Vector2(300, 250)
+	inventory_panel.custom_minimum_size = Vector2(250, 180)
 	
 	var panel_style = StyleBoxFlat.new()
-	panel_style.bg_color = Color(0.15, 0.15, 0.15, 0.9)
+	panel_style.bg_color = Color(0.15, 0.15, 0.15, 0.85)
 	panel_style.border_width_left = 3
 	panel_style.border_width_right = 3
 	panel_style.border_width_top = 3
 	panel_style.border_width_bottom = 3
-	panel_style.border_color = Color(0.4, 0.6, 0.4, 1.0)  # Green border for farm theme
+	panel_style.border_color = Color(0.4, 0.6, 0.4, 1.0)
 	panel_style.corner_radius_top_left = 6
 	panel_style.corner_radius_top_right = 6
 	panel_style.corner_radius_bottom_left = 6
@@ -61,14 +61,14 @@ func _create_inventory_panel() -> void:
 	# Main container
 	var main_container = VBoxContainer.new()
 	main_container.position = Vector2(10, 10)
-	main_container.custom_minimum_size = Vector2(280, 230)
+	main_container.custom_minimum_size = Vector2(230, 160)
 	inventory_panel.add_child(main_container)
 	
 	# Title
 	var title = Label.new()
 	title.text = "Inventory"
-	title.add_theme_font_size_override("font_size", 22)
-	title.add_theme_color_override("font_color", Color(0.8, 1.0, 0.8, 1.0))  # Light green
+	title.add_theme_font_size_override("font_size", 18)
+	title.add_theme_color_override("font_color", Color(0.8, 1.0, 0.8, 1.0))
 	main_container.add_child(title)
 	
 	# Separator
@@ -82,20 +82,20 @@ func _create_inventory_panel() -> void:
 
 ## Create upgrade panel
 func _create_upgrade_panel() -> void:
-	# Background panel
+	# Background panel - adjusted position and size
 	upgrade_panel = Panel.new()
-	upgrade_panel.anchor_left = 0.65
-	upgrade_panel.anchor_top = 0.05
-	upgrade_panel.anchor_right = 0.95
-	upgrade_panel.anchor_bottom = 0.7
+	upgrade_panel.anchor_left = 0.70
+	upgrade_panel.anchor_top = 0.02
+	upgrade_panel.anchor_right = 0.98
+	upgrade_panel.anchor_bottom = 0.50
 	
 	var panel_style = StyleBoxFlat.new()
-	panel_style.bg_color = Color(0.15, 0.15, 0.15, 0.9)
+	panel_style.bg_color = Color(0.15, 0.15, 0.15, 0.85)
 	panel_style.border_width_left = 3
 	panel_style.border_width_right = 3
 	panel_style.border_width_top = 3
 	panel_style.border_width_bottom = 3
-	panel_style.border_color = Color(0.6, 0.5, 0.3, 1.0)  # Gold border for upgrades
+	panel_style.border_color = Color(0.6, 0.5, 0.3, 1.0)
 	panel_style.corner_radius_top_left = 6
 	panel_style.corner_radius_top_right = 6
 	panel_style.corner_radius_bottom_left = 6
@@ -134,9 +134,14 @@ func _create_upgrade_panel() -> void:
 
 ## Create buff consumption panel
 func _create_buff_panel() -> void:
-	# Use the existing BuffConsumptionUI
-	var buff_ui = BuffConsumptionUI.new()
+	# Use the existing BuffConsumptionUI - positioned at bottom right
+	var buff_ui = load("res://scripts/ui/buff_consumption_ui.gd").new()
 	buff_ui.name = "BuffConsumptionUI"
+	# Reposition to bottom right to avoid overlap
+	buff_ui.anchor_left = 0.70
+	buff_ui.anchor_top = 0.52
+	buff_ui.anchor_right = 0.98
+	buff_ui.anchor_bottom = 0.85
 	add_child(buff_ui)
 
 ## Update inventory display
@@ -183,7 +188,7 @@ func update_inventory(inventory: Dictionary) -> void:
 			inventory_container.add_child(item_label)
 
 ## Update upgrades display
-func update_upgrades(progression_manager: Node) -> void:
+func update_upgrades(progression_manager) -> void:
 	if not upgrade_container or not progression_manager:
 		return
 	

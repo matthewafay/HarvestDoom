@@ -16,9 +16,9 @@ extends CanvasLayer
 class_name UIManager
 
 # UI Components
-var combat_ui: CombatUI = null
-var farm_ui: FarmUI = null
-var interaction_prompt: InteractionPrompt = null
+var combat_ui = null
+var farm_ui = null
+var interaction_prompt = null
 
 # Current UI mode
 enum UIMode { FARM, COMBAT }
@@ -38,13 +38,13 @@ func _ready() -> void:
 ## Create all UI component instances
 func _create_ui_components() -> void:
 	# Create CombatUI
-	combat_ui = CombatUI.new()
+	combat_ui = load("res://scripts/ui/combat_ui.gd").new()
 	combat_ui.name = "CombatUI"
 	combat_ui.visible = false
 	add_child(combat_ui)
 	
 	# Create FarmUI
-	farm_ui = FarmUI.new()
+	farm_ui = load("res://scripts/ui/farm_ui.gd").new()
 	farm_ui.name = "FarmUI"
 	farm_ui.visible = false
 	add_child(farm_ui)

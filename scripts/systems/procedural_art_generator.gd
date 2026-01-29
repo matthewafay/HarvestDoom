@@ -163,8 +163,8 @@ func _draw_melee_charger(image: Image, size: int) -> void:
 	
 	# Eyes - small and menacing
 	var eye_color = palette[2]  # Purple accent
-	_draw_filled_circle(image, center - size * 0.1, center - size * 0.05, size * 0.05, eye_color)
-	_draw_filled_circle(image, center + size * 0.1, center - size * 0.05, size * 0.05, eye_color)
+	_draw_circle(image, center - size * 0.1, center - size * 0.05, size * 0.05, eye_color)
+	_draw_circle(image, center + size * 0.1, center - size * 0.05, size * 0.05, eye_color)
 
 ## Draw a ranged shooter enemy (medium, with weapon elements)
 func _draw_ranged_shooter(image: Image, size: int) -> void:
@@ -186,11 +186,11 @@ func _draw_ranged_shooter(image: Image, size: int) -> void:
 	
 	# Head/sensor area - circle on top
 	var head_color = palette[2]  # Purple
-	_draw_filled_circle(image, center, center - size * 0.15, size * 0.15, head_color)
+	_draw_circle(image, center, center - size * 0.15, size * 0.15, head_color)
 	
 	# Targeting eye - glowing center
 	var eye_color = palette[1]  # Red
-	_draw_filled_circle(image, center, center - size * 0.15, size * 0.06, eye_color)
+	_draw_circle(image, center, center - size * 0.15, size * 0.06, eye_color)
 
 ## Draw a tank enemy (large, heavily armored, imposing)
 func _draw_tank_enemy(image: Image, size: int) -> void:
@@ -209,7 +209,7 @@ func _draw_tank_enemy(image: Image, size: int) -> void:
 	
 	# Central core - glowing weak point
 	var core_color = palette[1]  # Red
-	_draw_filled_circle(image, center, center, size * 0.12, core_color)
+	_draw_circle(image, center, center, size * 0.12, core_color)
 	
 	# Outer core ring
 	var ring_color = palette[2]  # Purple
@@ -225,7 +225,7 @@ func _draw_default_enemy(image: Image, size: int) -> void:
 	var palette = COMBAT_PALETTE
 	
 	# Simple circle with cross pattern
-	_draw_filled_circle(image, center, center, size * 0.3, palette[0])
+	_draw_circle(image, center, center, size * 0.3, palette[0])
 	_draw_filled_rect(image, center - size * 0.05, center - size * 0.25, size * 0.1, size * 0.5, palette[1])
 	_draw_filled_rect(image, center - size * 0.25, center - size * 0.05, size * 0.5, size * 0.1, palette[1])
 
@@ -537,14 +537,14 @@ func _generate_health_icon(size: Vector2i, seed_value: int) -> Image:
 	
 	# Simple heart approximation using circles and triangle
 	# Draw two circles at top
-	_draw_filled_circle(image, Vector2i(center_x - radius / 2, center_y - radius / 2), radius / 2, heart_color)
-	_draw_filled_circle(image, Vector2i(center_x + radius / 2, center_y - radius / 2), radius / 2, heart_color)
+	_draw_filled_circle(image, Vector2(center_x - radius / 2, center_y - radius / 2), radius / 2, heart_color)
+	_draw_filled_circle(image, Vector2(center_x + radius / 2, center_y - radius / 2), radius / 2, heart_color)
 	
 	# Draw triangle pointing down
 	_draw_filled_triangle(image, 
-		Vector2i(center_x - radius, center_y),
-		Vector2i(center_x + radius, center_y),
-		Vector2i(center_x, center_y + radius * 2),
+		Vector2(center_x - radius, center_y),
+		Vector2(center_x + radius, center_y),
+		Vector2(center_x, center_y + radius * 2),
 		heart_color)
 	
 	return image
@@ -568,9 +568,9 @@ func _generate_ammo_icon(size: Vector2i, seed_value: int) -> Image:
 	
 	# Draw bullet tip (small triangle)
 	_draw_filled_triangle(image,
-		Vector2i(center_x - width / 2, size.y / 4),
-		Vector2i(center_x + width / 2, size.y / 4),
-		Vector2i(center_x, size.y / 8),
+		Vector2(center_x - width / 2, size.y / 4),
+		Vector2(center_x + width / 2, size.y / 4),
+		Vector2(center_x, size.y / 8),
 		bullet_color.lightened(0.2))
 	
 	return image
@@ -687,34 +687,6 @@ func _generate_panel(size: Vector2i, seed_value: int) -> Image:
 	
 	return image
 
-## Helper: Draw a filled triangle
-func _draw_filled_triangle(image: Image, p1: Vector2i, p2: Vector2i, p3: Vector2i, color: Color) -> void:
-	# Simple scanline triangle fill
-	var points = [p1, p2, p3]
-	points.sort_custom(func(a, b): return a.y < b.y)
-	
-	var y_min = points[0].y
-	var y_max = points[2].y
-	
-	for y in range(y_min, y_max + 1):
-		var intersections = []
-		
-		# Check each edge
-		for i in range(3):
-			var p_a = points[i]
-			var p_b = points[(i + 1) % 3]
-			
-			if (p_a.y <= y and p_b.y > y) or (p_b.y <= y and p_a.y > y):
-				var t = float(y - p_a.y) / float(p_b.y - p_a.y)
-				var x = int(p_a.x + t * (p_b.x - p_a.x))
-				intersections.append(x)
-		
-		if intersections.size() >= 2:
-			intersections.sort()
-			for x in range(intersections[0], intersections[-1] + 1):
-				if x >= 0 and x < image.get_width() and y >= 0 and y < image.get_height():
-					image.set_pixel(x, y, color)
-
 ## Internal helper to create shapes from geometric primitives
 ## @param shape_data: Dictionary containing shape definition (type, size, colors, etc.)
 ##   Expected keys:
@@ -766,11 +738,11 @@ func _draw_shape(image: Image, shape_def: Dictionary, palette: Array[Color]) -> 
 	
 	match shape_type:
 		"rectangle":
-			_draw_rectangle(image, shape_def, color, filled)
+			_draw_shape_rectangle(image, shape_def, color, filled)
 		"circle":
 			_draw_shape_circle(image, shape_def, color, filled)
 		"triangle":
-			_draw_triangle(image, shape_def, color, filled)
+			_draw_shape_triangle(image, shape_def, color, filled)
 		_:
 			push_warning("Unknown shape type: " + shape_type)
 
@@ -787,8 +759,8 @@ func _get_color_from_def(shape_def: Dictionary, palette: Array[Color]) -> Color:
 	# Default to first palette color or white if no palette
 	return palette[0] if palette.size() > 0 else Color.WHITE
 
-## Draw a rectangle on the image
-func _draw_rectangle(image: Image, shape_def: Dictionary, color: Color, filled: bool) -> void:
+## Draw a rectangle shape on the image (used by shape-based generation)
+func _draw_shape_rectangle(image: Image, shape_def: Dictionary, color: Color, filled: bool) -> void:
 	if not shape_def.has("position") or not shape_def.has("size"):
 		return
 	
@@ -877,8 +849,8 @@ func _set_circle_pixels(image: Image, cx: int, cy: int, x: int, y: int, color: C
 		if point.x >= 0 and point.x < image.get_width() and point.y >= 0 and point.y < image.get_height():
 			image.set_pixel(point.x, point.y, color)
 
-## Draw a triangle on the image
-func _draw_triangle(image: Image, shape_def: Dictionary, color: Color, filled: bool) -> void:
+## Draw a triangle shape on the image (used by shape-based generation)
+func _draw_shape_triangle(image: Image, shape_def: Dictionary, color: Color, filled: bool) -> void:
 	if not shape_def.has("points") or not shape_def["points"] is Array:
 		return
 	

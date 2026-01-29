@@ -28,7 +28,7 @@ class_name FarmGrid
 @export var plot_size: float = 64.0
 
 ## Array of all Plot instances in the grid
-var plots: Array[Plot] = []
+var plots: Array = []
 
 ## Reference to the Plot scene for instancing
 ## This should be set to the Plot scene resource
@@ -37,12 +37,12 @@ var plot_scene: PackedScene = null
 ## Emitted when a crop is planted in a plot
 ## @param plot: The Plot instance where the crop was planted
 ## @param crop_type: The crop_id of the planted crop
-signal crop_planted(plot: Plot, crop_type: String)
+signal crop_planted(plot, crop_type: String)
 
 ## Emitted when a crop is harvested from a plot
 ## @param plot: The Plot instance where the crop was harvested
 ## @param resources: Dictionary containing harvest results
-signal crop_harvested(plot: Plot, resources: Dictionary)
+signal crop_harvested(plot, resources: Dictionary)
 
 func _ready() -> void:
 	_initialize_grid()
@@ -69,7 +69,7 @@ func _initialize_grid() -> void:
 	# Create plots in grid layout
 	for y in range(grid_size.y):
 		for x in range(grid_size.x):
-			var plot = Plot.new()
+			var plot = load("res://scripts/farming/plot.gd").new()
 			
 			# Position the plot
 			var plot_position = Vector2(
@@ -88,12 +88,12 @@ func _initialize_grid() -> void:
 ## Get the plot at a given world position
 ## @param world_pos: World position to check
 ## @returns: Plot instance at that position, or null if none found
-func get_plot_at_position(world_pos: Vector2) -> Plot:
+func get_plot_at_position(world_pos: Vector2):
 	# Convert world position to local position
 	var local_pos = to_local(world_pos)
 	
 	# Find the closest plot within interaction range
-	var closest_plot: Plot = null
+	var closest_plot = null
 	var closest_distance: float = INF
 	var interaction_range: float = plot_size / 2.0
 	
@@ -117,7 +117,7 @@ func get_plot_at_position(world_pos: Vector2) -> Plot:
 ## If the player has sufficient seeds, the seed cost is deducted from inventory.
 ## 
 ## Validates: Requirements 4.1, 4.2, 4.3, 4.4
-func plant_crop(plot: Plot, crop: CropData) -> bool:
+func plant_crop(plot, crop) -> bool:
 	if plot == null:
 		push_warning("FarmGrid.plant_crop: plot parameter is null")
 		return false
@@ -167,7 +167,7 @@ func plant_crop(plot: Plot, crop: CropData) -> bool:
 ## The harvested buff is stored in inventory for later consumption by the player.
 ##
 ## Validates: Requirements 4.1, 4.2, 4.3, 4.4
-func harvest_crop(plot: Plot) -> Dictionary:
+func harvest_crop(plot) -> Dictionary:
 	if plot == null:
 		push_warning("FarmGrid.harvest_crop: plot parameter is null")
 		return {}
@@ -229,14 +229,14 @@ func get_plot_count() -> int:
 
 ## Get all plots in the grid
 ## @returns: Array of all Plot instances
-func get_all_plots() -> Array[Plot]:
+func get_all_plots() -> Array:
 	return plots.duplicate()
 
 ## Get plots by state
 ## @param state: PlotState to filter by
 ## @returns: Array of plots matching the specified state
-func get_plots_by_state(state: Plot.PlotState) -> Array[Plot]:
-	var filtered: Array[Plot] = []
+func get_plots_by_state(state) -> Array:
+	var filtered: Array = []
 	for plot in plots:
 		if is_instance_valid(plot) and plot.state == state:
 			filtered.append(plot)
@@ -283,14 +283,14 @@ func _load_crop_database() -> Dictionary:
 	
 	for path in crop_paths:
 		if ResourceLoader.exists(path):
-			var crop = load(path) as CropData
+			var crop = load(path)
 			if crop:
 				database[crop.crop_id] = crop
 	
 	return database
 
 ## Called when a plot completes growth
-func _on_plot_growth_completed(plot: Plot) -> void:
+func _on_plot_growth_completed(plot) -> void:
 	# This can be used for visual/audio feedback in the future
 	pass
 

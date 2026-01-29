@@ -39,16 +39,26 @@ func _ready() -> void:
 
 ## Set up the UI elements
 func _setup_ui() -> void:
-	# Set up the control node
-	anchor_left = 0.7
-	anchor_top = 0.1
-	anchor_right = 0.95
-	anchor_bottom = 0.5
+	# Set up the control node - will be positioned by parent
+	# Anchors are set by FarmUI when creating this
 	
 	# Create background panel
 	var panel = Panel.new()
 	panel.anchor_right = 1.0
 	panel.anchor_bottom = 1.0
+	
+	var panel_style = StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.15, 0.15, 0.15, 0.85)
+	panel_style.border_width_left = 3
+	panel_style.border_width_right = 3
+	panel_style.border_width_top = 3
+	panel_style.border_width_bottom = 3
+	panel_style.border_color = Color(0.8, 0.4, 0.8, 1.0)
+	panel_style.corner_radius_top_left = 6
+	panel_style.corner_radius_top_right = 6
+	panel_style.corner_radius_bottom_left = 6
+	panel_style.corner_radius_bottom_right = 6
+	panel.add_theme_stylebox_override("panel", panel_style)
 	add_child(panel)
 	
 	# Create main container
@@ -104,7 +114,7 @@ func _update_buff_list() -> void:
 		buff_container.add_child(no_buffs_label)
 
 ## Create a button for a buff
-func _create_buff_button(buff_resource: Buff, inventory_key: String, display_name: String, count: int) -> void:
+func _create_buff_button(buff_resource, inventory_key: String, display_name: String, count: int) -> void:
 	var button = Button.new()
 	button.text = "%s (x%d)" % [display_name, count]
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -115,7 +125,7 @@ func _create_buff_button(buff_resource: Buff, inventory_key: String, display_nam
 	buff_container.add_child(button)
 
 ## Handle buff button press
-func _on_buff_button_pressed(buff_resource: Buff, inventory_key: String) -> void:
+func _on_buff_button_pressed(buff_resource, inventory_key: String) -> void:
 	# Check if player still has the buff
 	if not GameManager.has_inventory_amount(inventory_key, 1):
 		push_warning("BuffConsumptionUI: Tried to consume buff but none available")
@@ -134,7 +144,7 @@ func _on_buff_button_pressed(buff_resource: Buff, inventory_key: String) -> void
 	print("Buff activated: %s" % inventory_key)
 
 ## Handle buff applied signal
-func _on_buff_applied(buff: Buff) -> void:
+func _on_buff_applied(buff) -> void:
 	# Could add visual feedback here
 	pass
 

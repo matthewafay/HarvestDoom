@@ -75,9 +75,10 @@ shape = SubResource("BoxShape3D_1")
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Ground"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0)
 
-[node name="CameraPlaceholder" type="Marker3D" parent="."]
+[node name="CameraPlaceholder" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 0.819152, 0.573576, 0, -0.573576, 0.819152, 0, 4, 10)
-gizmo_extents = 0.5
+current = true
+fov = 75.0
 
 [node name="FarmingArea" type="Marker3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -5)

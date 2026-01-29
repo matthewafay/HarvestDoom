@@ -20,6 +20,8 @@ var player: Node3D = null
 func _ready() -> void:
 	_setup_ground_plane()
 	_setup_farm_system()
+	_setup_player()
+	_setup_portal_indicator()
 	_setup_ui_manager()
 	_setup_interaction_system()
 	_find_player()
@@ -61,11 +63,104 @@ func _setup_farm_system() -> void:
 	# Add to scene (as child of root, since FarmGrid is Node2D)
 	add_child(farm_grid)
 	
+	# Create 3D visual representations for the plots
+	_create_plot_visuals()
+	
 	# Give player some seeds for testing
 	if GameManager:
 		GameManager.add_to_inventory("health_seeds", 5)
 		GameManager.add_to_inventory("ammo_seeds", 3)
 		GameManager.add_to_inventory("weapon_mod_seeds", 2)
+
+## Set up the player character
+func _setup_player() -> void:
+	# Load and instantiate the player scene
+	var player_scene = load("res://scenes/player.tscn")
+	if player_scene:
+		player = player_scene.instantiate()
+		player.name = "Player"
+		# Position player near the farm area
+		player.position = Vector3(0, 1, 5)
+		add_child(player)
+		print("Player instantiated at position: ", player.position)
+	else:
+		push_error("FarmHub: Failed to load player scene")
+
+## Add visual indicator for the combat portal
+func _setup_portal_indicator() -> void:
+	# Add a floating label pointing to the portal
+	var portal_label = Label3D.new()
+	portal_label.text = "⚔️ COMBAT PORTAL →"
+	portal_label.font_size = 48
+	portal_label.modulate = Color(1.0, 0.3, 0.3, 1.0)
+	portal_label.outline_size = 12
+	portal_label.outline_modulate = Color(0, 0, 0, 1.0)
+	portal_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	
+	# Position it between player and portal
+	portal_label.position = Vector3(0, 3, 7)
+	add_child(portal_label)
+	
+	# Make it pulse/animate
+	var tween = create_tween()
+	tween.set_loops()
+	tween.tween_property(portal_label, "position:y", 3.5, 1.0)
+	tween.tween_property(portal_label, "position:y", 3.0, 1.0)
+
+## Create 3D visual representations for farm plots
+func _create_plot_visuals() -> void:
+	if farm_grid == null:
+		return
+	
+	var plot_size = farm_grid.plot_size
+	var grid_size = farm_grid.grid_size
+	
+	# Calculate grid offset to center the grid
+	var grid_width = grid_size.x * plot_size
+	var grid_height = grid_size.y * plot_size
+	var offset = Vector3(-grid_width / 2.0, 0, -grid_height / 2.0)
+	
+	# Create visual markers for each plot
+	for y in range(grid_size.y):
+		for x in range(grid_size.x):
+			# Create a simple box mesh for the plot
+			var mesh_instance = MeshInstance3D.new()
+			var box_mesh = BoxMesh.new()
+			box_mesh.size = Vector3(plot_size * 0.9, 0.1, plot_size * 0.9)
+			mesh_instance.mesh = box_mesh
+			
+			# Create material with brighter color
+			var material = StandardMaterial3D.new()
+			material.albedo_color = Color(0.6, 0.4, 0.2, 1.0)  # Lighter brown
+			material.roughness = 0.8
+			material.emission_enabled = true
+			material.emission = Color(0.3, 0.2, 0.1, 1.0)  # Slight glow
+			mesh_instance.set_surface_override_material(0, material)
+			
+			# Position the plot visual
+			var plot_position = Vector3(
+				x * plot_size + plot_size / 2.0,
+				0.05,
+				y * plot_size + plot_size / 2.0
+			) + offset
+			
+			if farming_area:
+				plot_position += farming_area.position
+			
+			mesh_instance.position = plot_position
+			add_child(mesh_instance)
+			
+			# Add a small label above the first plot as a hint
+			if x == 0 and y == 0:
+				var label_3d = Label3D.new()
+				label_3d.text = "← PLANT HERE (Press E)"
+				label_3d.font_size = 32
+				label_3d.modulate = Color(1.0, 1.0, 0.0, 1.0)
+				label_3d.outline_size = 8
+				label_3d.outline_modulate = Color(0, 0, 0, 1.0)
+				label_3d.position = plot_position + Vector3(0, 1.5, 0)
+				label_3d.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+				add_child(label_3d)
 
 ## Set up the UIManager
 func _setup_ui_manager() -> void:
@@ -81,7 +176,95 @@ func _setup_ui_manager() -> void:
 	# Connect upgrade button signal
 	ui_manager.upgrade_button_pressed.connect(_on_upgrade_button_pressed)
 	
+	# Add instructions label
+	_add_instructions()
+	
 	print("UIManager initialized with FarmUI")
+
+## Add control instructions to the UI
+func _add_instructions() -> void:
+	# Create objective tracker panel
+	var objective_panel = Panel.new()
+	objective_panel.position = Vector2(20, 420)
+	objective_panel.custom_minimum_size = Vector2(400, 200)
+	
+	var obj_style = StyleBoxFlat.new()
+	obj_style.bg_color = Color(0.1, 0.3, 0.1, 0.9)
+	obj_style.border_width_left = 3
+	obj_style.border_width_right = 3
+	obj_style.border_width_top = 3
+	obj_style.border_width_bottom = 3
+	obj_style.border_color = Color(0.4, 0.8, 0.4, 1.0)
+	obj_style.corner_radius_top_left = 6
+	obj_style.corner_radius_top_right = 6
+	obj_style.corner_radius_bottom_left = 6
+	obj_style.corner_radius_bottom_right = 6
+	objective_panel.add_theme_stylebox_override("panel", obj_style)
+	
+	var obj_container = VBoxContainer.new()
+	obj_container.position = Vector2(15, 10)
+	obj_container.custom_minimum_size = Vector2(370, 180)
+	objective_panel.add_child(obj_container)
+	
+	# Title
+	var obj_title = Label.new()
+	obj_title.text = "🎯 CURRENT OBJECTIVES"
+	obj_title.add_theme_font_size_override("font_size", 20)
+	obj_title.add_theme_color_override("font_color", Color(0.4, 1.0, 0.4, 1.0))
+	obj_container.add_child(obj_title)
+	
+	var separator = HSeparator.new()
+	obj_container.add_child(separator)
+	
+	# Objectives
+	var objectives = Label.new()
+	objectives.text = """1. Walk to the BROWN PLOTS (WASD to move)
+2. Stand near a plot and press E to PLANT
+3. Wait for crops to grow (or skip for testing)
+4. Press E again to HARVEST when ready
+5. Activate buffs in the panel (bottom right)
+6. Walk to the GLOWING PORTAL to enter combat!
+
+💡 TIP: You start with 5 Health Seeds!"""
+	
+	objectives.add_theme_font_size_override("font_size", 14)
+	objectives.add_theme_color_override("font_color", Color.WHITE)
+	objectives.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	obj_container.add_child(objectives)
+	
+	# Controls panel (smaller, repositioned)
+	var controls_panel = Panel.new()
+	controls_panel.position = Vector2(20, 640)
+	controls_panel.custom_minimum_size = Vector2(250, 140)
+	
+	var ctrl_style = StyleBoxFlat.new()
+	ctrl_style.bg_color = Color(0, 0, 0, 0.8)
+	ctrl_style.border_width_left = 2
+	ctrl_style.border_width_right = 2
+	ctrl_style.border_width_top = 2
+	ctrl_style.border_width_bottom = 2
+	ctrl_style.border_color = Color(0.6, 0.6, 0.6, 0.8)
+	ctrl_style.corner_radius_top_left = 4
+	ctrl_style.corner_radius_top_right = 4
+	ctrl_style.corner_radius_bottom_left = 4
+	ctrl_style.corner_radius_bottom_right = 4
+	controls_panel.add_theme_stylebox_override("panel", ctrl_style)
+	
+	var controls = Label.new()
+	controls.text = """⌨️ CONTROLS:
+WASD - Move
+Mouse - Look
+E - Interact
+ESC - Quit"""
+	
+	controls.position = Vector2(10, 10)
+	controls.add_theme_font_size_override("font_size", 14)
+	controls.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9, 1.0))
+	controls_panel.add_child(controls)
+	
+	if ui_manager:
+		ui_manager.add_child(objective_panel)
+		ui_manager.add_child(controls_panel)
 
 ## Set up the interaction prompt system
 func _setup_interaction_system() -> void:

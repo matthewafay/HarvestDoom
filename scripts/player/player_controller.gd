@@ -23,7 +23,7 @@ class_name PlayerController
 
 # Camera
 @onready var camera: Camera3D = $Camera3D
-@onready var weapon_system: WeaponSystem = $WeaponSystem
+@onready var weapon_system = $WeaponSystem
 var mouse_sensitivity: float = 0.002
 
 # State
@@ -72,11 +72,11 @@ func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("fire") and weapon_system:
 		weapon_system.fire_weapon()
 	
-	# Handle weapon switching
+	# Handle weapon switching (WeaponType enum: PISTOL=0, SHOTGUN=1, PLANT_WEAPON=2)
 	if event.is_action_pressed("switch_weapon_1") and weapon_system:
-		weapon_system.switch_weapon(WeaponSystem.WeaponType.PISTOL)
+		weapon_system.switch_weapon(0)  # PISTOL
 	if event.is_action_pressed("switch_weapon_2") and weapon_system:
-		weapon_system.switch_weapon(WeaponSystem.WeaponType.SHOTGUN)
+		weapon_system.switch_weapon(1)  # SHOTGUN
 
 func _handle_movement(delta: float) -> void:
 	"""Process WASD movement input with immediate acceleration."""

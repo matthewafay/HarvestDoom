@@ -33,7 +33,7 @@ class_name CropData
 
 ## The buff provided when this crop is harvested
 ## Should be a Buff resource with appropriate type and value
-@export var buff_provided: Buff = null
+@export var buff_provided = null
 
 ## Cost in seeds/currency to plant this crop
 @export var seed_cost: int = 10
@@ -92,12 +92,13 @@ func is_valid() -> bool:
 func get_description() -> String:
 	var buff_desc = ""
 	if buff_provided != null:
+		# BuffType enum values: HEALTH=0, AMMO=1, WEAPON_MOD=2
 		match buff_provided.buff_type:
-			Buff.BuffType.HEALTH:
+			0:  # HEALTH
 				buff_desc = "+%d Max Health" % buff_provided.value
-			Buff.BuffType.AMMO:
+			1:  # AMMO
 				buff_desc = "+%d Ammo" % buff_provided.value
-			Buff.BuffType.WEAPON_MOD:
+			2:  # WEAPON_MOD
 				buff_desc = "Weapon Mod: %s" % buff_provided.weapon_mod_type
 	
 	var growth_desc = ""
