@@ -26,6 +26,104 @@ func _ready() -> void:
 	_setup_interaction_system()
 	_find_player()
 
+func _process(_delta: float) -> void:
+	_check_plot_interaction()
+
+## Check for plot interaction using simple distance check
+func _check_plot_interaction() -> void:
+	if not player or not farm_grid or not ui_manager or not ui_manager.interaction_prompt:
+		return
+	
+	var player_pos = player.global_position
+	var closest_plot = null
+	var closest_distance = 999999.0
+	var interaction_range = 3.0
+	
+	# Check each plot
+	var plots = farm_grid.get_all_plots()
+	for i in range(plots.size()):
+		var plot = plots[i]
+		if not is_instance_valid(plot):
+			continue
+		
+		# Convert 2D plot position to 3D world position
+		var plot_2d_pos = plot.position + farm_grid.position
+		var plot_3d_pos = Vector3(plot_2d_pos.x, 0, plot_2d_pos.y)
+		if farming_area:
+			plot_3d_pos += farming_area.position
+		
+		var distance = player_pos.distance_to(plot_3d_pos)
+		if distance < interaction_range and distance < closest_distance:
+			closest_plot = plot
+			closest_distance = distance
+	
+	# Update prompt
+	if closest_plot:
+		var prompt_text = ""
+		# PlotState: EMPTY=0, GROWING=1, HARVESTABLE=2
+		match closest_plot.state:
+			0:  # EMPTY
+				prompt_text = "[E] Plant Crop (Health Seeds: %d)" % GameManager.get_inventory_amount("health_seeds")
+			1:  # GROWING
+				var progress = int(closest_plot.get_growth_progress() * 100)
+				prompt_text = "Growing... %d%%" % progress
+			2:  # HARVESTABLE
+				prompt_text = "[E] Harvest Crop!"
+		
+		ui_manager.interaction_prompt.show_prompt(prompt_text)
+		
+		# Handle interaction
+		if Input.is_action_just_pressed("interact"):
+			_interact_with_plot(closest_plot)
+	else:
+		ui_manager.interaction_prompt.hide_prompt()
+
+## Interact with a plot (plant or harvest)
+func _interact_with_plot(plot) -> void:
+	if not plot or not farm_grid:
+		return
+	
+	match plot.state:
+		0:  # EMPTY - try to plant
+			print("DEBUG: Attempting to plant. Health seeds in inventory: %d" % GameManager.get_inventory_amount("health_seeds"))
+			
+			# Load a default crop for testing
+			var crop_data_script = load("res://resources/crops/crop_data.gd")
+			var crop = crop_data_script.new()
+			crop.crop_id = "health_berry"
+			crop.display_name = "Health Berry"
+			crop.growth_time = 5.0  # 5 seconds for testing
+			crop.seed_cost = 1
+			crop.base_color = Color(1.0, 0.2, 0.2)
+			crop.shape_type = "round"
+			crop.growth_mode = "time"
+			
+			# Create a simple buff for the crop
+			var buff_script = load("res://resources/buffs/buff.gd")
+			var buff = buff_script.new()
+			buff.buff_type = 0  # HEALTH
+			buff.value = 20
+			buff.duration = 1
+			crop.buff_provided = buff
+			
+			print("DEBUG: Crop created. crop_id=%s, seed_cost=%d, buff_provided=%s" % [crop.crop_id, crop.seed_cost, str(crop.buff_provided)])
+			
+			# Try to plant
+			if farm_grid.plant_crop(plot, crop):
+				print("✓ Planted Health Berry! Remaining seeds: %d" % GameManager.get_inventory_amount("health_seeds"))
+			else:
+				print("✗ Failed to plant - not enough seeds. Have: %d, Need: %d" % [
+					GameManager.get_inventory_amount("health_seeds"),
+					crop.seed_cost
+				])
+		
+		2:  # HARVESTABLE - try to harvest
+			var resources = farm_grid.harvest_crop(plot)
+			if not resources.is_empty():
+				print("✓ Harvested crop!")
+			else:
+				print("✗ Failed to harvest")
+
 ## Creates a simple ground plane mesh for the farm hub with procedurally generated tileset
 func _setup_ground_plane() -> void:
 	var plane_mesh := PlaneMesh.new()
@@ -71,6 +169,11 @@ func _setup_farm_system() -> void:
 		GameManager.add_to_inventory("health_seeds", 5)
 		GameManager.add_to_inventory("ammo_seeds", 3)
 		GameManager.add_to_inventory("weapon_mod_seeds", 2)
+		print("✓ Added seeds to inventory: health=%d, ammo=%d, weapon_mod=%d" % [
+			GameManager.get_inventory_amount("health_seeds"),
+			GameManager.get_inventory_amount("ammo_seeds"),
+			GameManager.get_inventory_amount("weapon_mod_seeds")
+		])
 
 ## Set up the player character
 func _setup_player() -> void:
@@ -183,6 +286,9 @@ func _setup_ui_manager() -> void:
 
 ## Add control instructions to the UI
 func _add_instructions() -> void:
+	# Add crosshair in center of screen
+	_add_crosshair()
+	
 	# Create objective tracker panel
 	var objective_panel = Panel.new()
 	objective_panel.position = Vector2(20, 420)
@@ -268,8 +374,20 @@ ESC - Quit"""
 
 ## Set up the interaction prompt system
 func _setup_interaction_system() -> void:
+	# Add a raycast to the player for detecting plots
+	if player:
+		var raycast = RayCast3D.new()
+		raycast.name = "InteractionRaycast"
+		raycast.target_position = Vector3(0, 0, -3)  # 3 meters forward
+		raycast.collision_mask = 8  # Environment layer (where plots are)
+		raycast.enabled = true
+		player.add_child(raycast)
+		
+		# Store reference for interaction checking
+		player.set_meta("interaction_raycast", raycast)
+	
 	# The interaction prompt is now managed by UIManager
-	# Create the farm interaction manager
+	# Create the farm interaction manager (but it won't work properly due to 2D/3D mismatch)
 	var farm_interaction_script = load("res://scripts/farming/farm_interaction_manager.gd")
 	farm_interaction_manager = farm_interaction_script.new()
 	add_child(farm_interaction_manager)
@@ -298,6 +416,62 @@ func get_farm_grid():
 ## Get the interaction manager instance
 func get_interaction_manager():
 	return farm_interaction_manager
+
+## Add crosshair to center of screen
+func _add_crosshair() -> void:
+	if not ui_manager:
+		return
+	
+	# Create crosshair container
+	var crosshair_container = Control.new()
+	crosshair_container.anchor_left = 0.5
+	crosshair_container.anchor_top = 0.5
+	crosshair_container.anchor_right = 0.5
+	crosshair_container.anchor_bottom = 0.5
+	crosshair_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	
+	# Create crosshair lines
+	var crosshair_size = 20
+	var crosshair_thickness = 3
+	var crosshair_gap = 5
+	var crosshair_color = Color(1, 1, 1, 0.8)
+	
+	# Top line
+	var top = ColorRect.new()
+	top.color = crosshair_color
+	top.size = Vector2(crosshair_thickness, crosshair_size)
+	top.position = Vector2(-crosshair_thickness/2, -crosshair_size - crosshair_gap)
+	crosshair_container.add_child(top)
+	
+	# Bottom line
+	var bottom = ColorRect.new()
+	bottom.color = crosshair_color
+	bottom.size = Vector2(crosshair_thickness, crosshair_size)
+	bottom.position = Vector2(-crosshair_thickness/2, crosshair_gap)
+	crosshair_container.add_child(bottom)
+	
+	# Left line
+	var left = ColorRect.new()
+	left.color = crosshair_color
+	left.size = Vector2(crosshair_size, crosshair_thickness)
+	left.position = Vector2(-crosshair_size - crosshair_gap, -crosshair_thickness/2)
+	crosshair_container.add_child(left)
+	
+	# Right line
+	var right = ColorRect.new()
+	right.color = crosshair_color
+	right.size = Vector2(crosshair_size, crosshair_thickness)
+	right.position = Vector2(crosshair_gap, -crosshair_thickness/2)
+	crosshair_container.add_child(right)
+	
+	# Center dot
+	var center = ColorRect.new()
+	center.color = crosshair_color
+	center.size = Vector2(4, 4)
+	center.position = Vector2(-2, -2)
+	crosshair_container.add_child(center)
+	
+	ui_manager.add_child(crosshair_container)
 
 ## Handle upgrade button pressed
 func _on_upgrade_button_pressed(upgrade_id: String) -> void:
