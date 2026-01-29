@@ -1,0 +1,72 @@
+# Godot 4+ specific ignores
+.godot/
+.import/
+
+# Godot-specific
+*.translation
+*.import
+*.md5
+
+# Mono-specific ignores (if using C#)
+.mono/
+data_*/
+mono_crash.*.json
+
+# System/tool-specific ignores
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+[Dd]esktop.ini
+$RECYCLE.BIN/
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Export presets
+export_presets.cfg
+
+# Exported builds
+builds/
+exports/
+*.exe
+*.pck
+*.zip
+*.dmg
+*.app
+
+# Editor-specific
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# GdUnit4 test results and configuration
+.test_results/
+test_results/
+.gdunit4_update.ini
+
+# Temporary files
+*.tmp
+*.bak
+*.log
+
+# Kiro-generated documentation
+KiroDocs/

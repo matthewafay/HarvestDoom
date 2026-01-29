@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://bvqxm8y7yjn8k"]
+
+[ext_resource type="Script" path="res://scripts/systems/verify_arena_generator.gd" id="1_verify"]
+
+[node name="VerifyArenaGenerator" type="Node"]
+script = ExtResource("1_verify")

@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://c5qvxm8yjxqwh"]
+
+[ext_resource type="Script" path="res://scripts/farming/verify_plot.gd" id="1_verify"]
+
+[node name="VerifyPlot" type="Node"]
+script = ExtResource("1_verify")

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="CropData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://resources/crops/crop_data.gd" id="1_1"]
+[ext_resource type="Resource" path="res://resources/buffs/weapon_mod_damage.tres" id="2_1"]
+
+[resource]
+script = ExtResource("1_1")
+crop_id = "power_root"
+display_name = "Power Root"
+growth_time = 3.0
+buff_provided = ExtResource("2_1")
+seed_cost = 25
+base_color = Color(0.9, 0.4, 0.1, 1)
+shape_type = "round"
+growth_mode = "runs"

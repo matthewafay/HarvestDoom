@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=3 uid="uid://c8yqvxm7hn3yw"]
+
+[ext_resource type="Script" path="res://scripts/farming/verify_farm_grid.gd" id="1_farm_grid_verify"]
+[ext_resource type="Script" path="res://scripts/farming/farm_grid.gd" id="2_farm_grid"]
+
+[node name="VerifyFarmGrid" type="Node2D"]
+script = ExtResource("1_farm_grid_verify")
+
+[node name="FarmGrid" type="Node2D" parent="."]
+script = ExtResource("2_farm_grid")

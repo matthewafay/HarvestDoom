@@ -1,0 +1,143 @@
+[gd_scene load_steps=6 format=3 uid="uid://combat_zone_001"]
+
+[ext_resource type="Script" path="res://scenes/combat_zone.gd" id="1_combat_zone_script"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_1"]
+sky_top_color = Color(0.129412, 0.129412, 0.129412, 1)
+sky_horizon_color = Color(0.376471, 0.490196, 0.545098, 1)
+ground_bottom_color = Color(0.129412, 0.129412, 0.129412, 1)
+ground_horizon_color = Color(0.376471, 0.490196, 0.545098, 1)
+
+[sub_resource type="Sky" id="Sky_1"]
+sky_material = SubResource("ProceduralSkyMaterial_1")
+
+[sub_resource type="Environment" id="Environment_1"]
+background_mode = 2
+sky = SubResource("Sky_1")
+ambient_light_source = 3
+ambient_light_color = Color(0.376471, 0.490196, 0.545098, 1)
+ambient_light_energy = 0.4
+reflected_light_source = 2
+tonemap_mode = 2
+tonemap_exposure = 0.9
+tonemap_white = 0.95
+ssao_enabled = true
+ssao_radius = 2.0
+ssao_intensity = 1.5
+ssao_detail = 0.5
+glow_enabled = true
+glow_intensity = 0.6
+glow_strength = 1.0
+glow_bloom = 0.25
+glow_blend_mode = 1
+adjustment_enabled = true
+adjustment_brightness = 0.95
+adjustment_contrast = 1.1
+adjustment_saturation = 0.9
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_1"]
+size = Vector3(25, 0.5, 25)
+
+[node name="CombatZone" type="Node3D"]
+script = ExtResource("1_combat_zone_script")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_1")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.707107, -0.5, 0.5, 0, 0.707107, 0.707107, -0.707107, -0.5, 0.5, 0, 12, 0)
+light_color = Color(0.956863, 0.266667, 0.211765, 1)
+light_energy = 0.9
+light_indirect_energy = 0.6
+light_volumetric_fog_energy = 1.0
+shadow_enabled = true
+shadow_bias = 0.02
+shadow_normal_bias = 1.5
+shadow_blur = 0.5
+directional_shadow_mode = 1
+directional_shadow_split_1 = 0.1
+directional_shadow_blend_splits = true
+directional_shadow_max_distance = 40.0
+
+[node name="RimLight" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.707107, 0.5, -0.5, 0, 0.707107, 0.707107, 0.707107, 0.5, -0.5, 0, 8, 0)
+light_color = Color(0.611765, 0.152941, 0.690196, 1)
+light_energy = 0.3
+light_indirect_energy = 0.2
+shadow_enabled = false
+
+[node name="Arena" type="StaticBody3D" parent="."]
+collision_layer = 8
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Arena"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0)
+shape = SubResource("BoxShape3D_1")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Arena"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0)
+
+[node name="ArenaBoundaries" type="Node3D" parent="."]
+
+[node name="NorthWall" type="StaticBody3D" parent="ArenaBoundaries"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, -12.5)
+collision_layer = 8
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ArenaBoundaries/NorthWall"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="ArenaBoundaries/NorthWall"]
+
+[node name="SouthWall" type="StaticBody3D" parent="ArenaBoundaries"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 12.5)
+collision_layer = 8
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ArenaBoundaries/SouthWall"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="ArenaBoundaries/SouthWall"]
+
+[node name="EastWall" type="StaticBody3D" parent="ArenaBoundaries"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.5, 1.5, 0)
+collision_layer = 8
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ArenaBoundaries/EastWall"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="ArenaBoundaries/EastWall"]
+
+[node name="WestWall" type="StaticBody3D" parent="ArenaBoundaries"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.5, 1.5, 0)
+collision_layer = 8
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ArenaBoundaries/WestWall"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="ArenaBoundaries/WestWall"]
+
+[node name="SpawnPoints" type="Node3D" parent="."]
+
+[node name="SpawnPoint1" type="Marker3D" parent="SpawnPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, -8)
+
+[node name="SpawnPoint2" type="Marker3D" parent="SpawnPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, -8)
+
+[node name="SpawnPoint3" type="Marker3D" parent="SpawnPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 8)
+
+[node name="SpawnPoint4" type="Marker3D" parent="SpawnPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 8)
+
+[node name="SpawnPoint5" type="Marker3D" parent="SpawnPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -10)
+
+[node name="SpawnPoint6" type="Marker3D" parent="SpawnPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 10)
+
+[node name="CameraPlaceholder" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.906308, 0.422618, 0, -0.422618, 0.906308, 0, 2.5, 6)
+gizmo_extents = 0.5
+
+[node name="PlayerSpawnPoint" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)

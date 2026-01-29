@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://c8vqy7h3m8xyk"]
+
+[ext_resource type="Script" path="res://scripts/systems/verify_spawn_wave.gd" id="1_verify"]
+
+[node name="VerifySpawnWave" type="Node"]
+script = ExtResource("1_verify")

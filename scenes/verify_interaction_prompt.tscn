@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://verify_interaction_prompt"]
+
+[ext_resource type="Script" path="res://scripts/farming/verify_interaction_prompt.gd" id="1_verify_script"]
+
+[node name="VerifyInteractionPrompt" type="Node"]
+script = ExtResource("1_verify_script")

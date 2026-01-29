@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="Buff" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://resources/buffs/buff.gd" id="1_1"]
+
+[resource]
+script = ExtResource("1_1")
+buff_type = 2
+value = 0
+duration = 1
+weapon_mod_type = "fire_rate_boost"

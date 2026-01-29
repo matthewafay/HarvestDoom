@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="CropData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://resources/crops/crop_data.gd" id="1_1"]
+[ext_resource type="Resource" path="res://resources/buffs/ammo_buff_50.tres" id="2_1"]
+
+[resource]
+script = ExtResource("1_1")
+crop_id = "ammo_grain"
+display_name = "Ammo Grain"
+growth_time = 35.0
+buff_provided = ExtResource("2_1")
+seed_cost = 15
+base_color = Color(0.8, 0.7, 0.3, 1)
+shape_type = "tall"
+growth_mode = "time"
+

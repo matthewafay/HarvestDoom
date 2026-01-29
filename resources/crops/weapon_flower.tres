@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="CropData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://resources/crops/crop_data.gd" id="1_1"]
+[ext_resource type="Resource" path="res://resources/buffs/weapon_mod_fire_rate.tres" id="2_1"]
+
+[resource]
+script = ExtResource("1_1")
+crop_id = "weapon_flower"
+display_name = "Weapon Flower"
+growth_time = 40.0
+buff_provided = ExtResource("2_1")
+seed_cost = 20
+base_color = Color(0.6, 0.3, 0.8, 1)
+shape_type = "leafy"
+growth_mode = "time"
+

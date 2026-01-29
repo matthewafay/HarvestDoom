@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://c8yqvxm7qh8yk"]
+
+[ext_resource type="Script" path="res://scripts/systems/verify_tileset_generation.gd" id="1_verify"]
+
+[node name="TestTilesetGeneration" type="Node"]
+script = ExtResource("1_verify")
