@@ -21,17 +21,17 @@ enum WeaponType { PISTOL, SHOTGUN, PLANT_WEAPON }
 # Current weapon state
 var current_weapon: WeaponType = WeaponType.PISTOL
 
-# Ammunition tracking (Pistol has infinite ammo)
+# Ammunition tracking (Pistol has infinite ammo) - Tuned for combat sessions
 var ammo: Dictionary = {
-	WeaponType.SHOTGUN: 20,
-	WeaponType.PLANT_WEAPON: 10
+	WeaponType.SHOTGUN: 30,  # Increased from 20 for longer engagement
+	WeaponType.PLANT_WEAPON: 15  # Increased from 10
 }
 
-# Fire rate in seconds between shots (modified by upgrades)
+# Fire rate in seconds between shots (modified by upgrades) - Tuned for satisfying combat
 var fire_rate: Dictionary = {
-	WeaponType.PISTOL: 0.2,
-	WeaponType.SHOTGUN: 0.8,
-	WeaponType.PLANT_WEAPON: 0.5
+	WeaponType.PISTOL: 0.15,  # Faster from 0.2 for more responsive feel
+	WeaponType.SHOTGUN: 0.7,  # Slightly faster from 0.8
+	WeaponType.PLANT_WEAPON: 0.4  # Faster from 0.5
 }
 
 # Fire rate tracking

@@ -1,6 +1,7 @@
-[gd_scene load_steps=6 format=3 uid="uid://farm_hub_001"]
+[gd_scene load_steps=7 format=3 uid="uid://farm_hub_001"]
 
 [ext_resource type="Script" path="res://scenes/farm_hub.gd" id="1_farm_hub_script"]
+[ext_resource type="PackedScene" uid="uid://combat_portal_001" path="res://scenes/combat_portal.tscn" id="2_combat_portal"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_1"]
 sky_top_color = Color(0.545098, 0.764706, 0.313726, 1)
@@ -83,3 +84,5 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -5)
 
 [node name="PortalLocation" type="Marker3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 10)
+
+[node name="CombatPortal" parent="PortalLocation" instance=ExtResource("2_combat_portal")]

@@ -7,7 +7,7 @@
 script = ExtResource("1_1")
 crop_id = "health_berry"
 display_name = "Health Berry"
-growth_time = 30.0
+growth_time = 45.0
 buff_provided = ExtResource("2_1")
 seed_cost = 10
 base_color = Color(0.8, 0.2, 0.2, 1)

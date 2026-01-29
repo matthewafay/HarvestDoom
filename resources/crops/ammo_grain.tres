@@ -7,7 +7,7 @@
 script = ExtResource("1_1")
 crop_id = "ammo_grain"
 display_name = "Ammo Grain"
-growth_time = 35.0
+growth_time = 60.0
 buff_provided = ExtResource("2_1")
 seed_cost = 15
 base_color = Color(0.8, 0.7, 0.3, 1)

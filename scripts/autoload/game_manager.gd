@@ -35,6 +35,10 @@ var run_loot: Dictionary = {}
 # Note: Using untyped Array to avoid initialization order issues with Buff class
 var active_buffs: Array = []
 
+# Buff durations: Dictionary mapping buff index to remaining runs
+# Tracks how many runs each buff lasts for
+var buff_durations: Dictionary = {}
+
 # Permanent upgrades: Dictionary mapping upgrade IDs to their levels
 # Example: {"max_health_1": 1, "dash_cooldown_1": 1, "fire_rate_1": 2}
 var permanent_upgrades: Dictionary = {}
@@ -45,9 +49,23 @@ signal buff_applied(buff)  # buff: Buff (untyped to avoid loading order issues)
 signal buff_cleared()
 signal upgrade_unlocked(upgrade_id: String)
 
+# Reference to ProgressionManager (will be set when ProgressionManager is ready)
+var progression_manager: Node = null
+
 func _ready() -> void:
 	# Initialize default inventory values
 	_initialize_inventory()
+	
+	# Create and add ProgressionManager
+	var pm_script = load("res://scripts/systems/progression_manager.gd")
+	if pm_script:
+		progression_manager = Node.new()
+		progression_manager.set_script(pm_script)
+		progression_manager.set_name("ProgressionManager")
+		add_child(progression_manager)
+	
+	# Load saved game data on startup (Requirement 16.2)
+	load_game()
 
 func _initialize_inventory() -> void:
 	"""Initialize inventory with default starting values."""
@@ -69,13 +87,57 @@ func apply_buff(buff) -> void:
 		push_error("GameManager.apply_buff: Cannot apply null buff")
 		return
 	
+	var buff_index = active_buffs.size()
 	active_buffs.append(buff)
+	
+	# Track buff duration (number of runs)
+	if buff.has("duration"):
+		buff_durations[buff_index] = buff.duration
+	else:
+		buff_durations[buff_index] = 1  # Default to 1 run
+	
 	buff_applied.emit(buff)
 
 func clear_temporary_buffs() -> void:
 	"""Clear all temporary buffs. Called when returning to Farm_Hub after a combat run."""
 	active_buffs.clear()
+	buff_durations.clear()
 	buff_cleared.emit()
+
+func decrement_buff_durations() -> void:
+	"""Decrement buff durations after completing a combat run.
+	
+	Removes buffs that have expired (duration <= 0).
+	Called at the end of a successful combat run.
+	
+	Validates: Requirement 5.4 (buff duration tracking)
+	"""
+	var buffs_to_remove: Array[int] = []
+	
+	# Decrement all buff durations
+	for buff_index in buff_durations.keys():
+		buff_durations[buff_index] -= 1
+		
+		# Mark expired buffs for removal
+		if buff_durations[buff_index] <= 0:
+			buffs_to_remove.append(buff_index)
+	
+	# Remove expired buffs (in reverse order to maintain indices)
+	buffs_to_remove.sort()
+	buffs_to_remove.reverse()
+	
+	for buff_index in buffs_to_remove:
+		if buff_index < active_buffs.size():
+			active_buffs.remove_at(buff_index)
+		buff_durations.erase(buff_index)
+	
+	# Rebuild buff_durations dictionary with correct indices
+	if not buffs_to_remove.is_empty():
+		var new_durations: Dictionary = {}
+		for i in range(active_buffs.size()):
+			if buff_durations.has(i):
+				new_durations[i] = buff_durations[i]
+		buff_durations = new_durations
 
 func unlock_upgrade(upgrade_id: String) -> void:
 	"""Unlock or level up a permanent upgrade.
@@ -99,12 +161,16 @@ func transition_to_combat() -> void:
 	"""Transition from Farm_Hub to Combat_Zone.
 	
 	This method will:
+	- Save game state before transition
 	- Apply all active buffs to the player
 	- Load the Combat_Zone scene
 	- Preserve all state variables
 	
-	Validates: Requirements 7.1, 7.3, 7.5
+	Validates: Requirements 7.1, 7.3, 7.5, 16.1
 	"""
+	# Save game state before entering combat (Requirement 16.1)
+	save_game()
+	
 	# Apply all active buffs before entering combat
 	for buff in active_buffs:
 		if buff != null:
@@ -128,13 +194,17 @@ func transition_to_farm() -> void:
 	
 	This method will:
 	- Clear all temporary buffs
+	- Save game state after transition
 	- Load the Farm_Hub scene
 	- Preserve inventory and permanent upgrades
 	
-	Validates: Requirements 7.2, 7.4, 7.5
+	Validates: Requirements 7.2, 7.4, 7.5, 16.1
 	"""
 	# Clear all temporary buffs when returning to farm
 	clear_temporary_buffs()
+	
+	# Save game state after returning from combat (Requirement 16.1)
+	save_game()
 	
 	# Load the Farm_Hub scene
 	var farm_scene_path = "res://scenes/farm_hub.tscn"
@@ -154,10 +224,59 @@ func save_game() -> void:
 	Saves:
 	- Permanent upgrades
 	- Inventory resources
-	- Crop growth states (via ProgressionManager)
+	- Crop growth states (via FarmGrid if available)
+	
+	Validates: Requirements 16.1, 16.2, 16.3
 	"""
-	# TODO: Implement in task 8.3
-	push_warning("GameManager.save_game: Not yet implemented")
+	# Create SaveData instance using preload to avoid class resolution issues
+	const SaveDataScript = preload("res://resources/save_data.gd")
+	var save_data = SaveDataScript.new()
+	
+	# Populate save data from current game state
+	save_data.unlocked_upgrades = permanent_upgrades.keys()
+	save_data.inventory = inventory.duplicate()
+	save_data.timestamp = Time.get_unix_time_from_system()
+	
+	# Get plot states from FarmGrid if it exists in the current scene
+	var farm_grid = _find_farm_grid()
+	if farm_grid and farm_grid.has_method("serialize_plots"):
+		save_data.plot_states = farm_grid.serialize_plots()
+	
+	# Perform synchronous save
+	_save_to_file_sync(save_data)
+
+func _save_to_file_sync(save_data) -> void:
+	"""Synchronously save data to file.
+	
+	Args:
+		save_data: The SaveData to save
+	"""
+	var save_path = "user://save_game.json"
+	
+	# Convert save data to JSON
+	var json_string = JSON.stringify(save_data.to_dict(), "\t")
+	
+	# Attempt to write to file
+	var file = FileAccess.open(save_path, FileAccess.WRITE)
+	if file == null:
+		var error = FileAccess.get_open_error()
+		push_error("GameManager._save_to_file_sync: Failed to open save file: %s" % error)
+		if progression_manager:
+			progression_manager.save_failed.emit("Failed to save game data")
+		return
+	
+	file.store_string(json_string)
+	file.close()
+	
+	# Verify the save was written correctly
+	if FileAccess.file_exists(save_path):
+		if progression_manager:
+			progression_manager.save_succeeded.emit()
+		print("GameManager: Game saved successfully")
+	else:
+		push_error("GameManager._save_to_file_sync: Save file does not exist after write")
+		if progression_manager:
+			progression_manager.save_failed.emit("Save verification failed")
 
 func load_game() -> void:
 	"""Load saved game state from disk.
@@ -165,10 +284,82 @@ func load_game() -> void:
 	Loads:
 	- Permanent upgrades
 	- Inventory resources
-	- Crop growth states (via ProgressionManager)
+	- Crop growth states (applied to FarmGrid if available)
+	
+	Validates: Requirements 16.2, 16.3
 	"""
-	# TODO: Implement in task 8.3
-	push_warning("GameManager.load_game: Not yet implemented")
+	var save_path = "user://save_game.json"
+	
+	# Check if save file exists
+	if not FileAccess.file_exists(save_path):
+		push_warning("GameManager.load_game: No save file found at %s" % save_path)
+		return
+	
+	# Load and parse save file
+	var file = FileAccess.open(save_path, FileAccess.READ)
+	if file == null:
+		push_error("GameManager.load_game: Failed to open save file: %s" % FileAccess.get_open_error())
+		return
+	
+	var json_string = file.get_as_text()
+	file.close()
+	
+	var json = JSON.new()
+	var parse_result = json.parse(json_string)
+	
+	if parse_result != OK:
+		push_error("GameManager.load_game: Failed to parse save file JSON")
+		return
+	
+	var data = json.data
+	if not data is Dictionary:
+		push_error("GameManager.load_game: Save file does not contain a Dictionary")
+		return
+	
+	# Reconstruct SaveData from dictionary using preload
+	const SaveDataScript = preload("res://resources/save_data.gd")
+	var save_data = SaveDataScript.from_dict(data)
+	
+	# Validate save data
+	if not save_data.is_valid():
+		push_error("GameManager.load_game: Save data validation failed")
+		return
+	
+	# Apply loaded data to game state
+	permanent_upgrades.clear()
+	for upgrade_id in save_data.unlocked_upgrades:
+		permanent_upgrades[upgrade_id] = 1
+	
+	inventory = save_data.inventory.duplicate()
+	
+	# Apply plot states to FarmGrid if it exists
+	var farm_grid = _find_farm_grid()
+	if farm_grid and farm_grid.has_method("deserialize_plots"):
+		farm_grid.deserialize_plots(save_data.plot_states)
+	
+	# Apply upgrade effects
+	if progression_manager:
+		for upgrade_id in permanent_upgrades.keys():
+			progression_manager._apply_upgrade_effects(upgrade_id)
+	
+	print("GameManager.load_game: Successfully loaded save")
+
+func _find_farm_grid() -> Node:
+	"""Find the FarmGrid node in the current scene tree.
+	
+	Returns:
+		FarmGrid node if found, null otherwise
+	"""
+	var root = get_tree().current_scene
+	if root == null:
+		return null
+	
+	# Search for FarmGrid node
+	for child in root.get_children():
+		if child.get_script() and child.get_script().resource_path.ends_with("farm_grid.gd"):
+			return child
+	
+	return null
 
 func set_player_health(new_health: int) -> void:
 	"""Set player health and emit signal.

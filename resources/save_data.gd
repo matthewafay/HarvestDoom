@@ -69,8 +69,9 @@ func to_dict() -> Dictionary:
 ##
 ## Returns:
 ##   SaveData resource populated with data from the dictionary
-static func from_dict(data: Dictionary) -> SaveData:
-	var save = SaveData.new()
+static func from_dict(data: Dictionary):
+	var save_script = load("res://resources/save_data.gd")
+	var save = save_script.new()
 	save.unlocked_upgrades = data.get("unlocked_upgrades", [])
 	save.inventory = data.get("inventory", {})
 	save.plot_states = data.get("plot_states", [])

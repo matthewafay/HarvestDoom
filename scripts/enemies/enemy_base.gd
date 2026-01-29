@@ -15,11 +15,11 @@ extends CharacterBody3D
 
 class_name EnemyBase
 
-# Stats
-@export var max_health: int = 100
-@export var move_speed: float = 3.0
-@export var damage: int = 10
-@export var loot_drop: Dictionary = {"credits": 10}
+# Stats (Tuned for 5-10 minute combat sessions)
+@export var max_health: int = 80  # Reduced for faster kills
+@export var move_speed: float = 3.5  # Slightly faster for more challenge
+@export var damage: int = 15  # Increased to make combat more threatening
+@export var loot_drop: Dictionary = {"credits": 15}  # Increased rewards
 
 # State
 var current_health: int

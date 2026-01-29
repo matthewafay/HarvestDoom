@@ -7,7 +7,7 @@
 script = ExtResource("1_1")
 crop_id = "weapon_flower"
 display_name = "Weapon Flower"
-growth_time = 40.0
+growth_time = 75.0
 buff_provided = ExtResource("2_1")
 seed_cost = 20
 base_color = Color(0.6, 0.3, 0.8, 1)

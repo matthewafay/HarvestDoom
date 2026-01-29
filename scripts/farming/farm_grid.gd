@@ -253,17 +253,41 @@ func serialize_plots() -> Array[Dictionary]:
 
 ## Restore plot states from saved data
 ## @param plot_states: Array of dictionaries containing plot states
-## @param crop_database: Dictionary mapping crop_id to CropData resources
-func deserialize_plots(plot_states: Array[Dictionary], crop_database: Dictionary) -> void:
+func deserialize_plots(plot_states: Array[Dictionary]) -> void:
 	# Ensure we have the right number of plots
 	if plot_states.size() != plots.size():
 		push_warning("FarmGrid.deserialize_plots: plot count mismatch (saved: %d, current: %d)" % [plot_states.size(), plots.size()])
 		# Continue anyway, restore what we can
 	
+	# Load all crop resources into a database
+	var crop_database = _load_crop_database()
+	
 	var count = min(plot_states.size(), plots.size())
 	for i in range(count):
 		if is_instance_valid(plots[i]):
 			plots[i].from_dict(plot_states[i], crop_database)
+
+## Load all CropData resources from the resources/crops directory
+## @returns: Dictionary mapping crop_id to CropData resources
+func _load_crop_database() -> Dictionary:
+	var database: Dictionary = {}
+	
+	# List of known crop resource paths
+	var crop_paths = [
+		"res://resources/crops/health_berry.tres",
+		"res://resources/crops/vitality_herb.tres",
+		"res://resources/crops/ammo_grain.tres",
+		"res://resources/crops/power_root.tres",
+		"res://resources/crops/weapon_flower.tres"
+	]
+	
+	for path in crop_paths:
+		if ResourceLoader.exists(path):
+			var crop = load(path) as CropData
+			if crop:
+				database[crop.crop_id] = crop
+	
+	return database
 
 ## Called when a plot completes growth
 func _on_plot_growth_completed(plot: Plot) -> void:

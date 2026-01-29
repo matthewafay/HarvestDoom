@@ -7,10 +7,13 @@ extends Node3D
 @onready var arena_boundaries: Node3D = $ArenaBoundaries
 
 # ArenaGenerator instance for wave management
-var arena_generator: ArenaGenerator = null
+var arena_generator = null
 
 # Player reference for death handling
-var player: PlayerController = null
+var player = null
+
+# UIManager instance
+var ui_manager = null
 
 # Seeds for deterministic tileset generation
 const COMBAT_FLOOR_SEED: int = 54321
@@ -21,6 +24,7 @@ func _ready() -> void:
 	_setup_arena_boundaries()
 	_setup_arena_generator()
 	_setup_player()
+	_setup_ui_manager()
 	_start_combat_run()
 
 ## Sets up the arena floor with procedurally generated tileset
@@ -36,8 +40,10 @@ func _setup_arena_floor() -> void:
 	arena_floor.mesh = plane_mesh
 	
 	# Generate procedural tileset using ProceduralArtGenerator
-	var art_generator = ProceduralArtGenerator.new()
-	var tileset_texture = art_generator.generate_tileset(COMBAT_FLOOR_SEED, ProceduralArtGenerator.COMBAT_PALETTE)
+	var art_gen_script = load("res://scripts/systems/procedural_art_generator.gd")
+	var art_generator = art_gen_script.new()
+	var combat_palette = art_generator.COMBAT_PALETTE
+	var tileset_texture = art_generator.generate_tileset(COMBAT_FLOOR_SEED, combat_palette)
 	
 	# Create material with procedurally generated tileset
 	var material = StandardMaterial3D.new()
@@ -66,8 +72,10 @@ func _setup_arena_boundaries() -> void:
 	]
 	
 	# Generate procedural tileset for walls using ProceduralArtGenerator
-	var art_generator = ProceduralArtGenerator.new()
-	var wall_tileset_texture = art_generator.generate_tileset(COMBAT_WALL_SEED, ProceduralArtGenerator.COMBAT_PALETTE)
+	var art_gen_script = load("res://scripts/systems/procedural_art_generator.gd")
+	var art_generator = art_gen_script.new()
+	var combat_palette = art_generator.COMBAT_PALETTE
+	var wall_tileset_texture = art_generator.generate_tileset(COMBAT_WALL_SEED, combat_palette)
 	
 	# Create material for walls with procedural tileset
 	var wall_material = StandardMaterial3D.new()
@@ -101,7 +109,8 @@ func _setup_arena_boundaries() -> void:
 ## Validates: Requirements 7.2, 8.4
 func _setup_arena_generator() -> void:
 	# Create ArenaGenerator instance
-	arena_generator = ArenaGenerator.new()
+	var arena_gen_script = load("res://scripts/systems/arena_generator.gd")
+	arena_generator = arena_gen_script.new()
 	arena_generator.name = "ArenaGenerator"
 	add_child(arena_generator)
 	
@@ -139,6 +148,22 @@ func _setup_player() -> void:
 	if player:
 		player.died.connect(_on_player_died)
 		print("Player initialized and death signal connected")
+	
+	# Connect weapon system signals to UI
+	if player and player.has_node("WeaponSystem"):
+		var weapon_system = player.get_node("WeaponSystem")
+		weapon_system.weapon_switched.connect(_on_weapon_switched)
+		weapon_system.ammo_changed.connect(_on_ammo_changed)
+
+## Handle weapon switched
+func _on_weapon_switched(weapon_type: int) -> void:
+	if ui_manager and ui_manager.combat_ui:
+		ui_manager.combat_ui.show_weapon_switch(weapon_type)
+
+## Handle ammo changed
+func _on_ammo_changed(weapon_type: int, amount: int) -> void:
+	if ui_manager:
+		ui_manager.update_ammo_display(weapon_type, amount)
 
 ## Start the combat run by generating arena and spawning first wave
 ## Validates: Requirements 7.3, 8.1, 8.2
@@ -166,6 +191,9 @@ func _on_arena_completed() -> void:
 	if GameManager:
 		GameManager.finalize_run_loot()
 		print("Run loot finalized: %d total resources collected" % GameManager.get_total_run_loot())
+		
+		# Decrement buff durations (buffs last for multiple runs)
+		GameManager.decrement_buff_durations()
 	
 	# Transition back to Farm_Hub
 	# Use call_deferred to avoid issues with scene tree changes during signal processing
@@ -199,3 +227,16 @@ func _transition_to_farm_hub() -> void:
 		GameManager.transition_to_farm()
 	else:
 		push_error("Cannot transition to Farm_Hub: GameManager not found")
+
+## Set up the UIManager
+func _setup_ui_manager() -> void:
+	# Create UIManager instance
+	var ui_manager_script = load("res://scripts/ui/ui_manager.gd")
+	ui_manager = ui_manager_script.new()
+	ui_manager.name = "UIManager"
+	add_child(ui_manager)
+	
+	# Show combat UI
+	ui_manager.show_combat_ui()
+	
+	print("UIManager initialized with CombatUI")

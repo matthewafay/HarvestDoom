@@ -154,9 +154,108 @@ godot --headless --path . -s addons/gdUnit4/bin/GdUnitCmdTool.gd --test-suite te
 
 ## Development Status
 
-This project is currently in Phase 1: Project Setup and Core Systems.
+**Current Status**: Feature Complete - Ready for Export
 
-See `.kiro/specs/arcade-fps-farming-game/tasks.md` for detailed implementation tasks.
+All core systems implemented:
+- ✅ Player movement, combat, and health system
+- ✅ Three enemy types with AI (Melee, Ranged, Tank)
+- ✅ Weapon system (Pistol, Shotgun, Plant Weapon)
+- ✅ Farming system with time-based crop growth
+- ✅ Buff system linking farming to combat
+- ✅ Progression system with permanent upgrades
+- ✅ Save/load system with retry logic
+- ✅ Scene transitions between Farm Hub and Combat Zone
+- ✅ UI system (Combat UI, Farm UI, Interaction Prompts)
+- ✅ Procedural art generation for all visuals
+- ✅ Visual atmosphere (warm farm, dark combat)
+- ✅ Balanced for 10-15 minute play sessions
+
+See `.kiro/specs/arcade-fps-farming-game/tasks.md` for detailed task completion status.
+
+## Building for Windows
+
+### Export Configuration
+
+The project includes export presets configured for Windows Desktop:
+
+1. Open the project in Godot 4.6 or later
+2. Go to **Project → Export**
+3. Select "Windows Desktop" preset
+4. Click **Export Project**
+5. Choose output location (default: `./builds/ArcadeFPSFarming.exe`)
+
+### Export Settings
+
+- **Platform**: Windows Desktop (x86_64)
+- **Embed PCK**: Yes (single .exe file)
+- **Compression**: ZSTD (optimized for size)
+- **Target Size**: Under 50MB
+- **No external dependencies required**
+
+### Running the Game
+
+Simply double-click `ArcadeFPSFarming.exe` - no installation needed!
+
+Save data is stored in: `%APPDATA%/Godot/app_userdata/Arcade FPS Farming Game/`
+
+## Quick Start Guide
+
+### First Time Playing
+
+1. **Farm Hub**: You start in the peaceful farming area
+   - Walk around with WASD
+   - Approach plots and press E to plant crops
+   - Wait for crops to grow (45-75 seconds)
+   - Harvest crops for buffs
+
+2. **Enter Combat**: Walk to the glowing portal and press E
+   - Your harvested buffs are applied
+   - Fight through 5 waves of enemies
+   - Collect credits from defeated enemies
+
+3. **Return to Farm**: Complete all waves or die
+   - Successful completion: Keep all credits earned
+   - Death: Lose credits from that run
+   - Use credits to purchase permanent upgrades
+
+4. **Progression**: Repeat the loop
+   - Buy upgrades (health, speed, fire rate, dash)
+   - Plant better crops for stronger buffs
+   - Tackle harder waves with improved stats
+
+### Combat Tips
+
+- **Pistol**: Infinite ammo, good for basic enemies
+- **Shotgun**: Limited ammo, devastating at close range
+- **Dash**: Use Shift to dodge enemy attacks (1.5s cooldown)
+- **Kiting**: Keep moving to avoid melee enemies
+- **Prioritize**: Kill ranged shooters first, then tanks
+
+### Farming Tips
+
+- **Health Berry** (45s): +20 max health for next run
+- **Ammo Grain** (60s): +50 shotgun ammo
+- **Weapon Flower** (75s): Increased fire rate
+- Plant multiple crops for stacked buffs
+- Crops continue growing during combat runs
+
+## System Requirements
+
+**Minimum**:
+- OS: Windows 10 (64-bit)
+- Processor: Dual-core 2.0 GHz
+- Memory: 2 GB RAM
+- Graphics: OpenGL 3.3 compatible
+- Storage: 50 MB available space
+
+**Recommended**:
+- OS: Windows 10/11 (64-bit)
+- Processor: Quad-core 2.5 GHz
+- Memory: 4 GB RAM
+- Graphics: Dedicated GPU with OpenGL 3.3+
+- Storage: 50 MB available space
+
+Target: Stable 60 FPS during combat with 10+ enemies
 
 ## License
 

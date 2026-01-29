@@ -240,20 +240,6 @@ func _draw_filled_rect(image: Image, x: float, y: float, width: float, height: f
 		for px in range(x_start, x_end):
 			image.set_pixel(px, py, color)
 
-## Helper: Draw a filled circle
-func _draw_filled_circle(image: Image, cx: float, cy: float, radius: float, color: Color) -> void:
-	var x_start = int(max(0, cx - radius))
-	var y_start = int(max(0, cy - radius))
-	var x_end = int(min(image.get_width(), cx + radius + 1))
-	var y_end = int(min(image.get_height(), cy + radius + 1))
-	
-	for py in range(y_start, y_end):
-		for px in range(x_start, x_end):
-			var dx = px - cx
-			var dy = py - cy
-			if dx * dx + dy * dy <= radius * radius:
-				image.set_pixel(px, py, color)
-
 ## Helper: Draw a circle outline
 func _draw_circle_outline(image: Image, cx: float, cy: float, radius: float, color: Color, thickness: int) -> void:
 	var x_start = int(max(0, cx - radius - thickness))
@@ -701,16 +687,6 @@ func _generate_panel(size: Vector2i, seed_value: int) -> Image:
 	
 	return image
 
-## Helper: Draw a filled circle
-func _draw_filled_circle(image: Image, center: Vector2i, radius: int, color: Color) -> void:
-	for y in range(center.y - radius, center.y + radius + 1):
-		for x in range(center.x - radius, center.x + radius + 1):
-			var dx = x - center.x
-			var dy = y - center.y
-			if dx * dx + dy * dy <= radius * radius:
-				if x >= 0 and x < image.get_width() and y >= 0 and y < image.get_height():
-					image.set_pixel(x, y, color)
-
 ## Helper: Draw a filled triangle
 func _draw_filled_triangle(image: Image, p1: Vector2i, p2: Vector2i, p3: Vector2i, color: Color) -> void:
 	# Simple scanline triangle fill
@@ -792,7 +768,7 @@ func _draw_shape(image: Image, shape_def: Dictionary, palette: Array[Color]) -> 
 		"rectangle":
 			_draw_rectangle(image, shape_def, color, filled)
 		"circle":
-			_draw_circle(image, shape_def, color, filled)
+			_draw_shape_circle(image, shape_def, color, filled)
 		"triangle":
 			_draw_triangle(image, shape_def, color, filled)
 		_:
@@ -846,8 +822,8 @@ func _draw_rectangle(image: Image, shape_def: Dictionary, color: Color, filled: 
 			image.set_pixel(x1, y, color)
 			image.set_pixel(x2, y, color)
 
-## Draw a circle on the image
-func _draw_circle(image: Image, shape_def: Dictionary, color: Color, filled: bool) -> void:
+## Draw a circle shape on the image (used by shape-based generation)
+func _draw_shape_circle(image: Image, shape_def: Dictionary, color: Color, filled: bool) -> void:
 	if not shape_def.has("position") or not shape_def.has("size"):
 		return
 	
