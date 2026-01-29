@@ -13,6 +13,7 @@ const FARM_TILESET_SEED: int = 12345
 var farm_grid = null  # FarmGrid instance
 var farm_interaction_manager = null  # FarmInteractionManager instance
 var ui_manager = null  # UIManager instance
+var plot_visuals: Array = []  # Array of MeshInstance3D for plot visuals
 
 # Player reference (will be set when player enters scene)
 var player: Node3D = null
@@ -27,102 +28,127 @@ func _ready() -> void:
 	_find_player()
 
 func _process(_delta: float) -> void:
-	_check_plot_interaction()
+	_update_interaction_prompt()
+	_update_plot_visuals()
 
-## Check for plot interaction using simple distance check
-func _check_plot_interaction() -> void:
+# Removed _input - now using player's interact_pressed signal
+
+## Update the interaction prompt based on nearby plots
+func _update_interaction_prompt() -> void:
 	if not player or not farm_grid or not ui_manager or not ui_manager.interaction_prompt:
 		return
+	
+	var closest_plot = _find_closest_plot()
+	
+	if closest_plot:
+		var prompt_text = ""
+		# PlotState: EMPTY=0, GROWING=1, HARVESTABLE=2
+		if closest_plot.state == 0:  # EMPTY
+			prompt_text = "[E] Plant Crop (Health Seeds: %d)" % GameManager.get_inventory_amount("health_seeds")
+		elif closest_plot.state == 1:  # GROWING
+			var progress = int(closest_plot.get_growth_percentage() * 100)
+			prompt_text = "Growing... %d%%" % progress
+		elif closest_plot.state == 2:  # HARVESTABLE
+			prompt_text = "[E] Harvest Crop!"
+		
+		ui_manager.interaction_prompt.show_prompt(prompt_text)
+	else:
+		ui_manager.interaction_prompt.hide_prompt()
+
+## Try to interact with the closest plot
+func _try_interact_with_plot() -> void:
+	if not player or not farm_grid:
+		return
+	
+	var closest_plot = _find_closest_plot()
+	
+	if closest_plot:
+		_interact_with_plot(closest_plot)
+
+## Find the closest plot within interaction range
+func _find_closest_plot():
+	if not player or not farm_grid:
+		return null
 	
 	var player_pos = player.global_position
 	var closest_plot = null
 	var closest_distance = 999999.0
-	var interaction_range = 3.0
+	var interaction_range = 5.0  # Increased range for easier testing
 	
-	# Check each plot
 	var plots = farm_grid.get_all_plots()
-	for i in range(plots.size()):
-		var plot = plots[i]
+	
+	for plot in plots:
 		if not is_instance_valid(plot):
 			continue
 		
-		# Convert 2D plot position to 3D world position
-		var plot_2d_pos = plot.position + farm_grid.position
-		var plot_3d_pos = Vector3(plot_2d_pos.x, 0, plot_2d_pos.y)
-		if farming_area:
-			plot_3d_pos += farming_area.position
+		var distance = _get_plot_distance(plot)
 		
-		var distance = player_pos.distance_to(plot_3d_pos)
 		if distance < interaction_range and distance < closest_distance:
 			closest_plot = plot
 			closest_distance = distance
 	
-	# Update prompt
-	if closest_plot:
-		var prompt_text = ""
-		# PlotState: EMPTY=0, GROWING=1, HARVESTABLE=2
-		match closest_plot.state:
-			0:  # EMPTY
-				prompt_text = "[E] Plant Crop (Health Seeds: %d)" % GameManager.get_inventory_amount("health_seeds")
-			1:  # GROWING
-				var progress = int(closest_plot.get_growth_progress() * 100)
-				prompt_text = "Growing... %d%%" % progress
-			2:  # HARVESTABLE
-				prompt_text = "[E] Harvest Crop!"
-		
-		ui_manager.interaction_prompt.show_prompt(prompt_text)
-		
-		# Handle interaction
-		if Input.is_action_just_pressed("interact"):
-			_interact_with_plot(closest_plot)
-	else:
-		ui_manager.interaction_prompt.hide_prompt()
+	return closest_plot
+
+## Get the 3D distance from player to a plot
+func _get_plot_distance(plot) -> float:
+	if not player or not plot:
+		return 999999.0
+	
+	var player_pos = player.global_position
+	var plot_3d_pos = _get_plot_3d_position(plot)
+	
+	return player_pos.distance_to(plot_3d_pos)
+
+## Convert a plot's 2D position to 3D world position
+func _get_plot_3d_position(plot) -> Vector3:
+	# Plot positions are in 2D (Node2D), relative to FarmGrid
+	# FarmGrid is at origin, so plot.position is the 2D offset
+	# 2D X -> 3D X, 2D Y -> 3D Z
+	var plot_3d = Vector3(plot.position.x, 0, plot.position.y)
+	
+	# Add farming area offset (3D marker position)
+	if farming_area:
+		plot_3d += farming_area.position
+	
+	return plot_3d
 
 ## Interact with a plot (plant or harvest)
 func _interact_with_plot(plot) -> void:
 	if not plot or not farm_grid:
 		return
 	
-	match plot.state:
-		0:  # EMPTY - try to plant
-			print("DEBUG: Attempting to plant. Health seeds in inventory: %d" % GameManager.get_inventory_amount("health_seeds"))
-			
-			# Load a default crop for testing
-			var crop_data_script = load("res://resources/crops/crop_data.gd")
-			var crop = crop_data_script.new()
-			crop.crop_id = "health_berry"
-			crop.display_name = "Health Berry"
-			crop.growth_time = 5.0  # 5 seconds for testing
-			crop.seed_cost = 1
-			crop.base_color = Color(1.0, 0.2, 0.2)
-			crop.shape_type = "round"
-			crop.growth_mode = "time"
-			
-			# Create a simple buff for the crop
-			var buff_script = load("res://resources/buffs/buff.gd")
-			var buff = buff_script.new()
-			buff.buff_type = 0  # HEALTH
-			buff.value = 20
-			buff.duration = 1
-			crop.buff_provided = buff
-			
-			print("DEBUG: Crop created. crop_id=%s, seed_cost=%d, buff_provided=%s" % [crop.crop_id, crop.seed_cost, str(crop.buff_provided)])
-			
-			# Try to plant
-			if farm_grid.plant_crop(plot, crop):
-				print("✓ Planted Health Berry! Remaining seeds: %d" % GameManager.get_inventory_amount("health_seeds"))
-			else:
-				print("✗ Failed to plant - not enough seeds. Have: %d, Need: %d" % [
-					GameManager.get_inventory_amount("health_seeds"),
-					crop.seed_cost
-				])
+	if plot.state == 0:  # EMPTY - try to plant
+		# Load a default crop for testing
+		var crop_data_script = load("res://resources/crops/crop_data.gd")
+		var crop = crop_data_script.new()
+		crop.crop_id = "health_berry"
+		crop.display_name = "Health Berry"
+		crop.growth_time = 5.0  # 5 seconds for testing
+		crop.seed_cost = 1
+		crop.base_color = Color(1.0, 0.2, 0.2)
+		crop.shape_type = "round"
+		crop.growth_mode = "time"
 		
-		2:  # HARVESTABLE - try to harvest
-			var resources = farm_grid.harvest_crop(plot)
-			if not resources.is_empty():
-				print("✓ Harvested crop!")
-			else:
-				print("✗ Failed to harvest")
+		# Create a simple buff for the crop
+		var buff_script = load("res://resources/buffs/buff.gd")
+		var buff = buff_script.new()
+		buff.buff_type = 0  # HEALTH
+		buff.value = 20
+		buff.duration = 1
+		crop.buff_provided = buff
+		
+		# Try to plant
+		if farm_grid.plant_crop(plot, crop):
+			print("✓ Planted Health Berry!")
+		else:
+			print("✗ Cannot plant - not enough seeds")
+	
+	elif plot.state == 2:  # HARVESTABLE - try to harvest
+		var resources = farm_grid.harvest_crop(plot)
+		if not resources.is_empty():
+			print("✓ Harvested crop!")
+		else:
+			print("✗ Failed to harvest")
 
 ## Creates a simple ground plane mesh for the farm hub with procedurally generated tileset
 func _setup_ground_plane() -> void:
@@ -154,9 +180,8 @@ func _setup_farm_system() -> void:
 	farm_grid.grid_size = Vector2i(3, 4)  # 12 plots
 	farm_grid.plot_size = 2.0  # 2 meters per plot
 	
-	# Position the farm grid at the farming area marker
-	if farming_area:
-		farm_grid.position = Vector2(farming_area.position.x, farming_area.position.z)
+	# FarmGrid is Node2D - keep it at origin, we'll handle 3D positioning separately
+	farm_grid.position = Vector2.ZERO
 	
 	# Add to scene (as child of root, since FarmGrid is Node2D)
 	add_child(farm_grid)
@@ -182,12 +207,21 @@ func _setup_player() -> void:
 	if player_scene:
 		player = player_scene.instantiate()
 		player.name = "Player"
-		# Position player near the farm area
-		player.position = Vector3(0, 1, 5)
+		# Position player near the farm area (closer to plots)
+		player.position = Vector3(0, 1, -3)  # Closer to farming area at z=-5
 		add_child(player)
+		
+		# Connect interact signal
+		if player.has_signal("interact_pressed"):
+			player.interact_pressed.connect(_on_player_interact)
+		
 		print("Player instantiated at position: ", player.position)
 	else:
 		push_error("FarmHub: Failed to load player scene")
+
+## Called when player presses interact (E key)
+func _on_player_interact() -> void:
+	_try_interact_with_plot()
 
 ## Add visual indicator for the combat portal
 func _setup_portal_indicator() -> void:
@@ -386,11 +420,9 @@ func _setup_interaction_system() -> void:
 		# Store reference for interaction checking
 		player.set_meta("interaction_raycast", raycast)
 	
-	# The interaction prompt is now managed by UIManager
-	# Create the farm interaction manager (but it won't work properly due to 2D/3D mismatch)
-	var farm_interaction_script = load("res://scripts/farming/farm_interaction_manager.gd")
-	farm_interaction_manager = farm_interaction_script.new()
-	add_child(farm_interaction_manager)
+	# NOTE: We're NOT using farm_interaction_manager anymore
+	# The interaction is handled directly in farm_hub.gd via _on_player_interact()
+	# This avoids duplicate input handling and the 2D/3D mismatch issues
 
 ## Find the player node in the scene
 func _find_player() -> void:
@@ -402,12 +434,8 @@ func _find_player() -> void:
 		await get_tree().create_timer(0.1).timeout
 		player = get_node_or_null("Player")
 	
-	# Initialize the interaction manager once player is found
-	if player != null and farm_interaction_manager != null and farm_grid != null and ui_manager != null:
-		farm_interaction_manager.initialize(farm_grid, ui_manager.interaction_prompt, player)
-	else:
-		if player == null:
-			push_warning("FarmHub: Player node not found - interaction system will not work")
+	if player == null:
+		push_warning("FarmHub: Player node not found - interaction system will not work")
 
 ## Get the farm grid instance
 func get_farm_grid():

@@ -123,24 +123,34 @@ func _spawn_projectile(direction: Vector3, angle_offset: float) -> void:
 		push_error("WeaponSystem: projectile_scene not loaded")
 		return
 	
-	var projectile = projectile_scene.instantiate()
+	# Check if we're in the scene tree
+	if not is_inside_tree():
+		return
 	
 	# Get player camera for direction
 	var player = get_parent()
-	if player and player.has_node("Camera3D"):
-		var camera = player.get_node("Camera3D")
-		
-		# Calculate projectile direction with angle offset
-		var forward = -camera.global_transform.basis.z
-		if angle_offset != 0.0:
-			forward = forward.rotated(camera.global_transform.basis.y, angle_offset)
-		
-		# Set projectile position and direction
-		projectile.global_position = camera.global_position + forward * 0.5
-		projectile.direction = forward
-		
-		# Add to scene
-		get_tree().root.add_child(projectile)
+	if not player or not player.has_node("Camera3D"):
+		return
+	
+	var camera = player.get_node("Camera3D")
+	
+	# Check camera is in tree before accessing global_transform
+	if not camera.is_inside_tree():
+		return
+	
+	var projectile = projectile_scene.instantiate()
+	
+	# Calculate projectile direction with angle offset
+	var forward = -camera.global_transform.basis.z
+	if angle_offset != 0.0:
+		forward = forward.rotated(camera.global_transform.basis.y, angle_offset)
+	
+	# Set projectile position and direction
+	projectile.global_position = camera.global_position + forward * 0.5
+	projectile.direction = forward
+	
+	# Add to scene
+	get_tree().root.add_child(projectile)
 
 func switch_weapon(weapon_type: WeaponType) -> void:
 	"""Switch to a different weapon instantly.

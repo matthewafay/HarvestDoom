@@ -37,10 +37,6 @@ window/stretch/aspect="expand"
 
 project/assembly_name="Arcade FPS Farming Game"
 
-[editor_plugins]
-
-enabled=PackedStringArray("res://addons/gdUnit4/plugin.cfg")
-
 [input]
 
 move_forward={

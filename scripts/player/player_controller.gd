@@ -34,6 +34,7 @@ var cooldown_timer: float = 0.0
 # Signals
 signal died()
 signal dash_performed()
+signal interact_pressed()
 
 func _ready() -> void:
 	# Capture mouse for first-person control
@@ -77,6 +78,10 @@ func _input(event: InputEvent) -> void:
 		weapon_system.switch_weapon(0)  # PISTOL
 	if event.is_action_pressed("switch_weapon_2") and weapon_system:
 		weapon_system.switch_weapon(1)  # SHOTGUN
+	
+	# Handle interact - emit signal for farm_hub to handle
+	if event.is_action_pressed("interact"):
+		interact_pressed.emit()
 
 func _handle_movement(delta: float) -> void:
 	"""Process WASD movement input with immediate acceleration."""

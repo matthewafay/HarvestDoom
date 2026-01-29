@@ -276,4 +276,3 @@ func get_available_upgrades() -> Array:
 			})
 	
 	return upgrades_list
-
