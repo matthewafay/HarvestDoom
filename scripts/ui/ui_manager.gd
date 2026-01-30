@@ -19,6 +19,7 @@ class_name UIManager
 var combat_ui = null
 var farm_ui = null
 var interaction_prompt = null
+var pause_menu = null
 
 # Current UI mode
 enum UIMode { FARM, COMBAT }
@@ -57,6 +58,11 @@ func _create_ui_components() -> void:
 		add_child(interaction_prompt)
 	else:
 		push_error("UIManager: Failed to load interaction_prompt.tscn")
+	
+	# Create PauseMenu
+	pause_menu = load("res://scripts/ui/pause_menu.gd").new()
+	pause_menu.name = "PauseMenu"
+	add_child(pause_menu)
 
 ## Connect to GameManager signals for automatic UI updates
 func _connect_signals() -> void:

@@ -31,7 +31,7 @@ var arena_boundaries: Array[Node3D] = []
 
 # Wave management
 var current_wave: int = 0
-var active_enemies: Array[EnemyBase] = []
+var active_enemies: Array = []  # Array of EnemyBase instances
 var total_waves: int = 5  # Total number of waves in the arena
 var wave_complete_emitted: bool = false  # Track if wave_completed signal was emitted for current wave
 var auto_progress_enabled: bool = true  # Enable automatic wave progression
@@ -229,8 +229,10 @@ func _create_wall(position: Vector3, size: Vector3) -> StaticBody3D:
 	mesh_instance.mesh = box_mesh
 	
 	# Create material with combat palette color
+	var art_gen_script = load("res://scripts/systems/procedural_art_generator.gd")
+	var combat_palette = art_gen_script.COMBAT_PALETTE
 	var material = StandardMaterial3D.new()
-	material.albedo_color = ProceduralArtGenerator.COMBAT_PALETTE[randi() % ProceduralArtGenerator.COMBAT_PALETTE.size()]
+	material.albedo_color = combat_palette[randi() % combat_palette.size()]
 	mesh_instance.material_override = material
 	
 	wall.add_child(mesh_instance)
@@ -337,8 +339,10 @@ func _create_cover_object(position: Vector3) -> StaticBody3D:
 	mesh_instance.position.y = size.y / 2  # Raise to sit on ground
 	
 	# Create material with combat palette color
+	var art_gen_script = load("res://scripts/systems/procedural_art_generator.gd")
+	var combat_palette = art_gen_script.COMBAT_PALETTE
 	var material = StandardMaterial3D.new()
-	material.albedo_color = ProceduralArtGenerator.COMBAT_PALETTE[randi() % ProceduralArtGenerator.COMBAT_PALETTE.size()]
+	material.albedo_color = combat_palette[randi() % combat_palette.size()]
 	mesh_instance.material_override = material
 	
 	cover.add_child(mesh_instance)
@@ -446,19 +450,25 @@ func spawn_wave(wave_number: int) -> void:
 ## Create an enemy instance based on type string
 ## @param enemy_type: The enemy type name ("MeleeCharger", "RangedShooter", "TankEnemy")
 ## @return: An enemy instance or null if type is invalid
-func _create_enemy(enemy_type: String) -> EnemyBase:
-	var enemy: EnemyBase = null
+func _create_enemy(enemy_type: String):
+	var enemy = null
 	
-	match enemy_type:
-		"MeleeCharger":
-			enemy = MeleeCharger.new()
-		"RangedShooter":
-			enemy = RangedShooter.new()
-		"TankEnemy":
-			enemy = TankEnemy.new()
-		_:
-			push_error("Unknown enemy type: %s" % enemy_type)
-			return null
+	var melee_script = load("res://scripts/enemies/melee_charger.gd")
+	var ranged_script = load("res://scripts/enemies/ranged_shooter.gd")
+	var tank_script = load("res://scripts/enemies/tank_enemy.gd")
+	
+	if enemy_type == "MeleeCharger":
+		enemy = CharacterBody3D.new()
+		enemy.set_script(melee_script)
+	elif enemy_type == "RangedShooter":
+		enemy = CharacterBody3D.new()
+		enemy.set_script(ranged_script)
+	elif enemy_type == "TankEnemy":
+		enemy = CharacterBody3D.new()
+		enemy.set_script(tank_script)
+	else:
+		push_error("Unknown enemy type: %s" % enemy_type)
+		return null
 	
 	return enemy
 
@@ -503,7 +513,7 @@ func get_random_spawn_point() -> Vector3:
 ## Validates: Requirements 8.2, 8.4
 func is_wave_complete() -> bool:
 	# Clean up the active_enemies array by removing invalid/dead enemies
-	var alive_enemies: Array[EnemyBase] = []
+	var alive_enemies: Array = []
 	
 	for enemy in active_enemies:
 		# Check if enemy is still a valid instance and not dead

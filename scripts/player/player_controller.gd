@@ -20,6 +20,7 @@ class_name PlayerController
 @export var dash_speed: float = 15.0
 @export var dash_duration: float = 0.2
 @export var dash_cooldown: float = 1.0
+@export var jump_velocity: float = 6.0
 
 # Camera
 @onready var camera: Camera3D = $Camera3D
@@ -37,6 +38,9 @@ signal dash_performed()
 signal interact_pressed()
 
 func _ready() -> void:
+	# Add to player group so enemies can find us
+	add_to_group("player")
+	
 	# Capture mouse for first-person control
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	
@@ -96,6 +100,10 @@ func _handle_movement(delta: float) -> void:
 		velocity.x = 0.0
 		velocity.z = 0.0
 	
+	# Handle jumping
+	if is_on_floor() and Input.is_action_just_pressed("ui_accept"):  # Space bar
+		velocity.y = jump_velocity
+	
 	# Apply gravity
 	if not is_on_floor():
 		velocity.y -= 9.8 * delta
@@ -147,9 +155,5 @@ func _on_health_changed(new_health: int, max_health: int) -> void:
 	pass
 
 func _unhandled_input(event: InputEvent) -> void:
-	# Toggle mouse capture with ESC key
-	if event.is_action_pressed("ui_cancel"):
-		if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
-			Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
-		else:
-			Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	# ESC is now handled by PauseMenu
+	pass

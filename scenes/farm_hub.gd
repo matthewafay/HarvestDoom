@@ -20,6 +20,7 @@ var player: Node3D = null
 
 func _ready() -> void:
 	_setup_ground_plane()
+	_setup_boundaries()
 	_setup_farm_system()
 	_setup_player()
 	_setup_portal_indicator()
@@ -172,6 +173,52 @@ func _setup_ground_plane() -> void:
 	plane_mesh.material = material
 	ground_mesh.mesh = plane_mesh
 
+## Set up invisible boundary walls to prevent falling off the map
+func _setup_boundaries() -> void:
+	var wall_height = 5.0
+	var wall_thickness = 1.0
+	var arena_size = 30.0
+	var half_size = arena_size / 2.0
+	
+	# Wall configurations: [position, size]
+	var walls = [
+		# North wall (negative Z)
+		[Vector3(0, wall_height / 2, -half_size - wall_thickness / 2), Vector3(arena_size + wall_thickness * 2, wall_height, wall_thickness)],
+		# South wall (positive Z) - leave gap for portal area
+		[Vector3(0, wall_height / 2, half_size + wall_thickness / 2), Vector3(arena_size + wall_thickness * 2, wall_height, wall_thickness)],
+		# East wall (positive X)
+		[Vector3(half_size + wall_thickness / 2, wall_height / 2, 0), Vector3(wall_thickness, wall_height, arena_size)],
+		# West wall (negative X)
+		[Vector3(-half_size - wall_thickness / 2, wall_height / 2, 0), Vector3(wall_thickness, wall_height, arena_size)]
+	]
+	
+	for wall_data in walls:
+		var wall = StaticBody3D.new()
+		wall.position = wall_data[0]
+		wall.collision_layer = 8  # Environment layer
+		wall.collision_mask = 0
+		
+		# Add collision shape
+		var collision = CollisionShape3D.new()
+		var shape = BoxShape3D.new()
+		shape.size = wall_data[1]
+		collision.shape = shape
+		wall.add_child(collision)
+		
+		# Add visible mesh (semi-transparent fence look)
+		var mesh_instance = MeshInstance3D.new()
+		var box_mesh = BoxMesh.new()
+		box_mesh.size = wall_data[1]
+		mesh_instance.mesh = box_mesh
+		
+		var material = StandardMaterial3D.new()
+		material.albedo_color = Color(0.4, 0.3, 0.2, 0.3)  # Brown, semi-transparent
+		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mesh_instance.material_override = material
+		wall.add_child(mesh_instance)
+		
+		add_child(wall)
+
 ## Set up the farm grid system
 func _setup_farm_system() -> void:
 	# Create FarmGrid instance
@@ -225,17 +272,17 @@ func _on_player_interact() -> void:
 
 ## Add visual indicator for the combat portal
 func _setup_portal_indicator() -> void:
-	# Add a floating label pointing to the portal
+	# Add a floating label pointing to the portal (which is at z=10)
 	var portal_label = Label3D.new()
-	portal_label.text = "⚔️ COMBAT PORTAL →"
+	portal_label.text = "⚔️ COMBAT PORTAL →\n(Walk forward to z=10)"
 	portal_label.font_size = 48
 	portal_label.modulate = Color(1.0, 0.3, 0.3, 1.0)
 	portal_label.outline_size = 12
 	portal_label.outline_modulate = Color(0, 0, 0, 1.0)
 	portal_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	
-	# Position it between player and portal
-	portal_label.position = Vector3(0, 3, 7)
+	# Position it between player spawn and portal
+	portal_label.position = Vector3(0, 3, 5)
 	add_child(portal_label)
 	
 	# Make it pulse/animate
@@ -257,6 +304,9 @@ func _create_plot_visuals() -> void:
 	var grid_height = grid_size.y * plot_size
 	var offset = Vector3(-grid_width / 2.0, 0, -grid_height / 2.0)
 	
+	# Clear existing visuals
+	plot_visuals.clear()
+	
 	# Create visual markers for each plot
 	for y in range(grid_size.y):
 		for x in range(grid_size.x):
@@ -266,9 +316,9 @@ func _create_plot_visuals() -> void:
 			box_mesh.size = Vector3(plot_size * 0.9, 0.1, plot_size * 0.9)
 			mesh_instance.mesh = box_mesh
 			
-			# Create material with brighter color
+			# Create material with brighter color (will be updated based on state)
 			var material = StandardMaterial3D.new()
-			material.albedo_color = Color(0.6, 0.4, 0.2, 1.0)  # Lighter brown
+			material.albedo_color = Color(0.6, 0.4, 0.2, 1.0)  # Lighter brown (empty)
 			material.roughness = 0.8
 			material.emission_enabled = true
 			material.emission = Color(0.3, 0.2, 0.1, 1.0)  # Slight glow
@@ -287,6 +337,9 @@ func _create_plot_visuals() -> void:
 			mesh_instance.position = plot_position
 			add_child(mesh_instance)
 			
+			# Store reference for updating visuals
+			plot_visuals.append(mesh_instance)
+			
 			# Add a small label above the first plot as a hint
 			if x == 0 and y == 0:
 				var label_3d = Label3D.new()
@@ -298,6 +351,39 @@ func _create_plot_visuals() -> void:
 				label_3d.position = plot_position + Vector3(0, 1.5, 0)
 				label_3d.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 				add_child(label_3d)
+
+## Update plot visuals based on crop state
+func _update_plot_visuals() -> void:
+	if not farm_grid:
+		return
+	
+	var plots = farm_grid.get_all_plots()
+	
+	for i in range(min(plots.size(), plot_visuals.size())):
+		var plot = plots[i]
+		var mesh = plot_visuals[i]
+		
+		if not is_instance_valid(plot) or not is_instance_valid(mesh):
+			continue
+		
+		var material = mesh.get_surface_override_material(0)
+		if not material:
+			continue
+		
+		# Update color based on plot state
+		# PlotState: EMPTY=0, GROWING=1, HARVESTABLE=2
+		if plot.state == 0:  # EMPTY - brown
+			material.albedo_color = Color(0.6, 0.4, 0.2, 1.0)
+			material.emission = Color(0.3, 0.2, 0.1, 1.0)
+		elif plot.state == 1:  # GROWING - green tint, intensity based on progress
+			var progress = plot.get_growth_percentage()
+			var green_intensity = 0.3 + progress * 0.4
+			material.albedo_color = Color(0.4, 0.4 + green_intensity, 0.2, 1.0)
+			material.emission = Color(0.2, 0.3 + progress * 0.2, 0.1, 1.0)
+		elif plot.state == 2:  # HARVESTABLE - bright golden/yellow glow
+			material.albedo_color = Color(1.0, 0.85, 0.2, 1.0)
+			material.emission = Color(0.8, 0.6, 0.1, 1.0)
+			material.emission_energy_multiplier = 1.5  # Extra glow
 
 ## Set up the UIManager
 func _setup_ui_manager() -> void:
@@ -393,9 +479,10 @@ func _add_instructions() -> void:
 	var controls = Label.new()
 	controls.text = """⌨️ CONTROLS:
 WASD - Move
+Space - Jump
 Mouse - Look
 E - Interact
-ESC - Quit"""
+Shift - Dash"""
 	
 	controls.position = Vector2(10, 10)
 	controls.add_theme_font_size_override("font_size", 14)

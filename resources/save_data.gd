@@ -22,7 +22,7 @@ class_name SaveData
 
 ## Array of unlocked upgrade IDs
 ## Example: ["max_health_1", "dash_cooldown_1", "fire_rate_1"]
-@export var unlocked_upgrades: Array[String] = []
+@export var unlocked_upgrades: Array = []
 
 ## Dictionary mapping resource types to quantities
 ## Example: {"credits": 500, "seeds": 20, "ammo": 50}
@@ -31,7 +31,7 @@ class_name SaveData
 ## Array of plot state dictionaries for farming persistence
 ## Each dictionary contains: {crop_id: String, growth_progress: float, state: int}
 ## Empty plots are represented as empty dictionaries or null entries
-@export var plot_states: Array[Dictionary] = []
+@export var plot_states: Array = []
 
 ## Total number of combat runs completed across all sessions
 ## Used for statistics and run-based crop growth
